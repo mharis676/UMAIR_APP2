@@ -1,0 +1,18 @@
+{
+  "name": "StockTrack - Stock Receiving & Delivery",
+  "short_name": "StockTrack",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "description": "Mobile app for tracking stock received and stock delivered across any product inventory.",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

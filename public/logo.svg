@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <linearGradient id="boxgrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e0e7ff" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#grad)" />
+  <!-- Isometric Box / Package Icon -->
+  <g transform="translate(96, 96) scale(0.625)" fill="none" stroke="#ffffff" stroke-width="24" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 64 L448 160 L256 256 L64 160 Z" fill="rgba(255, 255, 255, 0.25)" />
+    <path d="M64 160 L64 352 L256 448 L256 256 Z" fill="rgba(255, 255, 255, 0.15)" />
+    <path d="M448 160 L448 352 L256 448 L256 256 Z" fill="rgba(255, 255, 255, 0.35)" />
+    <line x1="256" y1="256" x2="256" y2="448" stroke="#ffffff" stroke-width="20" />
+    <!-- Inflow Arrow (Green / Receive) -->
+    <path d="M120 80 L180 80 L180 140" stroke="#34d399" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Outflow Arrow (Cyan / Deliver) -->
+    <path d="M392 400 L332 400 L332 340" stroke="#38bdf8" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+</svg>
