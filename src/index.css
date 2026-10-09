@@ -121,12 +121,24 @@ body {
     overflow: hidden;
     border: 1px solid var(--border-color);
   }
+  .app-header {
+    padding-top: 14px !important;
+    padding-bottom: 14px !important;
+  }
+  .bottom-nav {
+    border-bottom-left-radius: 28px;
+    border-bottom-right-radius: 28px;
+    padding-bottom: 12px !important;
+  }
+  .main-content {
+    padding-bottom: 95px !important;
+  }
 }
 
 /* Scroll area accounting for fixed top header and fixed bottom navigation */
 .main-content {
   flex: 1;
-  padding: 16px 16px 95px 16px;
+  padding: 16px 16px 145px 16px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -137,7 +149,7 @@ h1, h2, h3, h4, .font-heading {
   letter-spacing: -0.02em;
 }
 
-/* Header */
+/* Header with Mobile Status Bar Safe Area Clearance */
 .app-header {
   position: sticky;
   top: 0;
@@ -146,7 +158,11 @@ h1, h2, h3, h4, .font-heading {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
-  padding: 10px 14px;
+  /* Clears phone's top clock, Wi-Fi, battery icons, and camera notch */
+  padding-top: max(48px, calc(env(safe-area-inset-top, 0px) + 14px));
+  padding-bottom: 12px;
+  padding-left: max(14px, env(safe-area-inset-left, 0px));
+  padding-right: max(14px, env(safe-area-inset-right, 0px));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -234,7 +250,7 @@ h1, h2, h3, h4, .font-heading {
   border-color: var(--primary);
 }
 
-/* Bottom Navigation Bar */
+/* Bottom Navigation Bar with Phone Navigation Button Clearance */
 .bottom-nav {
   position: fixed;
   bottom: 0;
@@ -249,8 +265,11 @@ h1, h2, h3, h4, .font-heading {
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-around;
-  padding: 6px 4px;
-  padding-bottom: max(8px, env(safe-area-inset-bottom));
+  padding-top: 8px;
+  padding-left: max(6px, env(safe-area-inset-left, 0px));
+  padding-right: max(6px, env(safe-area-inset-right, 0px));
+  /* Clears Android system navigation buttons (Back/Home/Recents) and iOS home indicator */
+  padding-bottom: max(56px, calc(env(safe-area-inset-bottom, 0px) + 16px));
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.05);
 }
 
@@ -873,7 +892,7 @@ h1, h2, h3, h4, .font-heading {
 /* Toast Notifications */
 .toast-container {
   position: fixed;
-  top: 75px;
+  top: calc(max(48px, calc(env(safe-area-inset-top, 0px) + 14px)) + 54px);
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);
@@ -940,7 +959,7 @@ h1, h2, h3, h4, .font-heading {
 /* Extra responsiveness for narrow phone screens (<= 380px) */
 @media (max-width: 380px) {
   .main-content {
-    padding: 12px 10px 90px 10px;
+    padding: 12px 10px 145px 10px;
   }
   .card {
     padding: 14px 12px;

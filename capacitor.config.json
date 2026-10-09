@@ -1,5 +1,8 @@
 {
   "appId": "com.stockflow.app",
   "appName": "StockTrack",
-  "webDir": "dist"
+  "webDir": "dist",
+  "android": {
+    "adjustMarginsForEdgeToEdge": "auto"
+  }
 }
