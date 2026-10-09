@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { X, Sparkles, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { UNIT_OPTIONS, CATEGORIES_META, CATEGORY_OPTIONS } from '../types';
+import { WhatsAppProductStockButton } from './WhatsAppShareButton';
 
 export default function ProductModal({ isOpen, onClose, editingProduct = null, onCreatedCallback = null }) {
-  const { addProduct, updateProduct } = useApp();
+  const { addProduct, updateProduct, operator } = useApp();
 
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
@@ -105,6 +106,29 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
         {error && (
           <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px', fontSize: '0.85rem' }}>
             {error}
+          </div>
+        )}
+
+        {editingProduct && (
+          <div
+            style={{
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '16px'
+            }}
+          >
+            <div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Current In-Stock</div>
+              <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
+                {editingProduct.stock} <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>{editingProduct.unit}</span>
+              </div>
+            </div>
+            <WhatsAppProductStockButton product={editingProduct} operator={operator} variant="button" />
           </div>
         )}
 

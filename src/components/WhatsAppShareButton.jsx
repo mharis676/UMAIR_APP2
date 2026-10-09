@@ -1,5 +1,9 @@
 import React from 'react';
-import { shareToWhatsApp } from '../utils/whatsapp';
+import { 
+  shareToWhatsApp, 
+  shareProductStockToWhatsApp, 
+  shareInventoryReportToWhatsApp 
+} from '../utils/whatsapp';
 
 export function WhatsAppIcon({ size = 18, color = 'currentColor' }) {
   return (
@@ -58,3 +62,113 @@ export default function WhatsAppShareButton({
     </button>
   );
 }
+
+/**
+ * 1-Tap button to share a specific product's current stock on WhatsApp
+ */
+export function WhatsAppProductStockButton({
+  product,
+  operator,
+  style = {},
+  variant = "icon" // "icon" | "button"
+}) {
+  if (!product) return null;
+
+  if (variant === "icon") {
+    return (
+      <button
+        type="button"
+        className="icon-btn"
+        onClick={(e) => {
+          e.stopPropagation();
+          shareProductStockToWhatsApp(product, operator);
+        }}
+        style={{
+          width: '36px',
+          height: '36px',
+          color: '#16a34a',
+          background: 'rgba(34, 197, 94, 0.1)',
+          borderColor: 'rgba(34, 197, 94, 0.28)',
+          ...style
+        }}
+        title="Share current stock balance via WhatsApp"
+        aria-label="Share current stock via WhatsApp"
+      >
+        <WhatsAppIcon size={17} color="#16a34a" />
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="btn"
+      onClick={(e) => {
+        e.stopPropagation();
+        shareProductStockToWhatsApp(product, operator);
+      }}
+      style={{
+        background: '#25D366',
+        color: '#ffffff',
+        border: 'none',
+        boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)',
+        padding: '8px 14px',
+        fontSize: '0.8rem',
+        fontWeight: 600,
+        borderRadius: '10px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        cursor: 'pointer',
+        ...style
+      }}
+      title="Share current stock via WhatsApp"
+    >
+      <WhatsAppIcon size={16} color="#ffffff" />
+      <span>Share Stock</span>
+    </button>
+  );
+}
+
+/**
+ * 1-Tap button to share current filtered stock inventory report on WhatsApp
+ */
+export function WhatsAppReportButton({
+  products = [],
+  categoryName = 'All Items',
+  operator,
+  label = "Share Stock on WhatsApp",
+  style = {}
+}) {
+  return (
+    <button
+      type="button"
+      className="btn"
+      onClick={(e) => {
+        e.stopPropagation();
+        shareInventoryReportToWhatsApp(products, { categoryName, operator });
+      }}
+      style={{
+        background: '#25D366',
+        color: '#ffffff',
+        border: 'none',
+        boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)',
+        padding: '8px 14px',
+        fontSize: '0.82rem',
+        fontWeight: 600,
+        borderRadius: '10px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '7px',
+        cursor: 'pointer',
+        transition: 'all 0.15s ease',
+        ...style
+      }}
+      title="Share current inventory stock report on WhatsApp"
+    >
+      <WhatsAppIcon size={16} color="#ffffff" />
+      <span>{label}</span>
+    </button>
+  );
+}
+

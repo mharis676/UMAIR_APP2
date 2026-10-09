@@ -63,3 +63,83 @@ export function shareToWhatsApp(tx) {
   // Open in new tab or trigger WhatsApp native mobile app
   window.open(url, '_blank', 'noopener,noreferrer');
 }
+
+/**
+ * Format single product current stock balance for WhatsApp
+ */
+export function generateProductStockMessage(product, operator) {
+  if (!product) return '';
+
+  const dateFormatted = new Date().toLocaleString();
+  const isOutOfStock = (product.stock || 0) <= 0;
+
+  const lines = [
+    '📦 *CURRENT STOCK BALANCE*',
+    '━━━━━━━━━━━━━━━━━━',
+    `🔹 *Product:* ${product.name || 'N/A'}`,
+    product.code ? `🏷️ *SKU / Code:* ${product.code}` : null,
+    product.category ? `📂 *Category:* ${product.category}` : null,
+    isOutOfStock 
+      ? `⚠️ *Current In-Stock:* 0 ${product.unit || 'units'} *(OUT OF STOCK)*`
+      : `✅ *Current In-Stock:* *${product.stock} ${product.unit || 'units'}*`,
+    '━━━━━━━━━━━━━━━━━━',
+    operator ? `👤 *Informed By:* ${operator}` : null,
+    `🕒 *As of:* ${dateFormatted}`,
+    '━━━━━━━━━━━━━━━━━━',
+    '_StockTrack Mobile App - Real-Time Quantity Tracking_'
+  ].filter(Boolean);
+
+  return lines.join('\n');
+}
+
+export function shareProductStockToWhatsApp(product, operator) {
+  const text = generateProductStockMessage(product, operator);
+  const encoded = encodeURIComponent(text);
+  const url = `https://api.whatsapp.com/send?text=${encoded}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+/**
+ * Format complete current inventory stock report for WhatsApp
+ */
+export function generateInventoryReportMessage(products = [], { categoryName = 'All Items', operator } = {}) {
+  const dateFormatted = new Date().toLocaleString();
+  const totalUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
+
+  const lines = [
+    '📋 *INVENTORY STOCK REPORT*',
+    '━━━━━━━━━━━━━━━━━━',
+    categoryName && categoryName !== 'ALL' && categoryName !== 'All Items'
+      ? `📂 *Category:* ${categoryName}`
+      : `📂 *Scope:* Complete Inventory (All Items)`,
+    `📦 *Total Products:* ${products.length} items`,
+    `🔢 *Total Stock on Hand:* *${totalUnits.toLocaleString()}* units`,
+    operator ? `👤 *Reported By:* ${operator}` : null,
+    `🕒 *Date & Time:* ${dateFormatted}`,
+    '━━━━━━━━━━━━━━━━━━',
+    '*CURRENT STOCK BREAKDOWN:*'
+  ].filter(Boolean);
+
+  if (products.length === 0) {
+    lines.push('_No products recorded in this selection._');
+  } else {
+    products.forEach((p, index) => {
+      const codeStr = p.code ? ` [${p.code}]` : '';
+      const stockStr = (p.stock || 0) <= 0 ? '*0 (Out of stock)*' : `*${p.stock} ${p.unit || 'units'}*`;
+      lines.push(`${index + 1}. *${p.name}*${codeStr}: ${stockStr}`);
+    });
+  }
+
+  lines.push('━━━━━━━━━━━━━━━━━━');
+  lines.push('_StockTrack Mobile App - Real-Time Quantity Tracking_');
+
+  return lines.join('\n');
+}
+
+export function shareInventoryReportToWhatsApp(products = [], options = {}) {
+  const text = generateInventoryReportMessage(products, options);
+  const encoded = encodeURIComponent(text);
+  const url = `https://api.whatsapp.com/send?text=${encoded}`;
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+

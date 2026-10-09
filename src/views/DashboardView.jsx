@@ -6,11 +6,13 @@ import {
   TrendingDown,
   TrendingUp,
   Clock,
-  Sparkles,
-  Package
+  Package,
+  Sparkles
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { getCategoryInfo } from '../types';
+import { shareInventoryReportToWhatsApp } from '../utils/whatsapp';
+import { WhatsAppIcon } from '../components/WhatsAppShareButton';
 
 export default function DashboardView({ onOpenAddProduct }) {
   const { products, transactions, operator, setCurrentTab, navigateToReceiveWithProduct, navigateToDeliverWithProduct } = useApp();
@@ -107,6 +109,34 @@ export default function DashboardView({ onOpenAddProduct }) {
             </div>
           </div>
         </div>
+
+        {/* 1-Tap Share Stock Report via WhatsApp */}
+        <button
+          type="button"
+          onClick={() => shareInventoryReportToWhatsApp(products, { operator })}
+          style={{
+            marginTop: '14px',
+            width: '100%',
+            background: 'rgba(255, 255, 255, 0.16)',
+            border: '1px solid rgba(255, 255, 255, 0.25)',
+            borderRadius: '12px',
+            padding: '9px 14px',
+            color: '#ffffff',
+            fontSize: '0.82rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            cursor: 'pointer',
+            backdropFilter: 'blur(8px)',
+            transition: 'background 0.15s ease'
+          }}
+          title="Share complete inventory stock report on WhatsApp"
+        >
+          <WhatsAppIcon size={17} color="#4ade80" />
+          <span>Share Stock Report on WhatsApp</span>
+        </button>
       </div>
 
       {/* Big Tactile Quick Action Cards */}

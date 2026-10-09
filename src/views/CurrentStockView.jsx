@@ -12,10 +12,12 @@ import {
 import { useApp } from '../context/AppContext';
 import { CATEGORIES_META, getCategoryInfo } from '../types';
 import ProductModal from '../components/ProductModal';
+import { WhatsAppProductStockButton, WhatsAppReportButton } from '../components/WhatsAppShareButton';
 
 export default function CurrentStockView({ onOpenAddProduct }) {
   const { 
     products, 
+    operator,
     navigateToReceiveWithProduct, 
     navigateToDeliverWithProduct 
   } = useApp();
@@ -65,13 +67,22 @@ export default function CurrentStockView({ onOpenAddProduct }) {
           </p>
         </div>
 
-        <button
-          className="btn btn-primary"
-          style={{ padding: '8px 14px', fontSize: '0.82rem', borderRadius: '10px' }}
-          onClick={onOpenAddProduct}
-        >
-          <Plus size={16} strokeWidth={2.5} /> Add Product
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <WhatsAppReportButton
+            products={filteredProducts}
+            categoryName={selectedCategory}
+            operator={operator}
+            label="Share Stock"
+            style={{ padding: '8px 12px', fontSize: '0.78rem', borderRadius: '10px' }}
+          />
+          <button
+            className="btn btn-primary"
+            style={{ padding: '8px 12px', fontSize: '0.78rem', borderRadius: '10px' }}
+            onClick={onOpenAddProduct}
+          >
+            <Plus size={15} strokeWidth={2.5} /> Add
+          </button>
+        </div>
       </div>
 
       {/* Search Input Bar */}
@@ -301,6 +312,11 @@ export default function CurrentStockView({ onOpenAddProduct }) {
                   >
                     <ArrowUpFromLine size={15} strokeWidth={2.4} /> Deliver
                   </button>
+
+                  <WhatsAppProductStockButton
+                    product={p}
+                    operator={operator}
+                  />
 
                   <button
                     type="button"
