@@ -10,6 +10,7 @@ import {
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ProductSearchBar from '../components/ProductSearchBar';
+import WhatsAppShareButton from '../components/WhatsAppShareButton';
 
 export default function DeliverView() {
   const { 
@@ -108,7 +109,8 @@ export default function DeliverView() {
         prevBalance: res.prevBalance,
         newBalance: res.newBalance,
         refNumber: res.transaction.refNumber,
-        txId: res.transaction.id
+        txId: res.transaction.id,
+        transaction: res.transaction
       });
       setQuantity('1');
       setRecipient('');
@@ -168,21 +170,29 @@ export default function DeliverView() {
             </span>
           </p>
 
-          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
-            <button
-              className="btn btn-secondary"
-              style={{ fontSize: '0.84rem', padding: '10px 16px' }}
-              onClick={() => setLastSuccessResult(null)}
-            >
-              Deliver Another
-            </button>
-            <button
-              className="btn btn-deliver"
-              style={{ fontSize: '0.84rem', padding: '10px 16px' }}
-              onClick={() => setCurrentTab('history')}
-            >
-              View in History <ArrowRight size={14} />
-            </button>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <WhatsAppShareButton
+              transaction={lastSuccessResult.transaction}
+              label="Share Dispatch Slip on WhatsApp"
+              style={{ width: '100%', padding: '13px' }}
+            />
+
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button
+                className="btn btn-secondary"
+                style={{ flex: 1, fontSize: '0.84rem', padding: '10px 14px' }}
+                onClick={() => setLastSuccessResult(null)}
+              >
+                Deliver Another
+              </button>
+              <button
+                className="btn btn-deliver"
+                style={{ flex: 1, fontSize: '0.84rem', padding: '10px 14px' }}
+                onClick={() => setCurrentTab('history')}
+              >
+                View in History <ArrowRight size={14} />
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -14,6 +14,8 @@ import {
 import { useApp } from '../context/AppContext';
 import { storage } from '../storage';
 import ReversalModal from '../components/ReversalModal';
+import WhatsAppShareButton, { WhatsAppIcon } from '../components/WhatsAppShareButton';
+import { shareToWhatsApp } from '../utils/whatsapp';
 
 export default function HistoryView() {
   const { transactions, showToast } = useApp();
@@ -226,14 +228,39 @@ export default function HistoryView() {
                     )}
                   </div>
 
-                  <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 500 }}>
-                    {new Date(tx.timestamp).toLocaleString([], {
-                      month: 'short',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 500 }}>
+                      {new Date(tx.timestamp).toLocaleString([], {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        shareToWhatsApp(tx);
+                      }}
+                      style={{
+                        background: 'rgba(37, 211, 102, 0.12)',
+                        border: '1px solid rgba(37, 211, 102, 0.3)',
+                        color: '#16a34a',
+                        borderRadius: '6px',
+                        padding: '3px 7px',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                        fontSize: '0.68rem',
+                        fontWeight: 600
+                      }}
+                      title="Share to WhatsApp"
+                    >
+                      <WhatsAppIcon size={12} color="#16a34a" /> WhatsApp
+                    </button>
+                  </div>
                 </div>
 
                 {/* Product & Quantity Row */}
@@ -316,8 +343,15 @@ export default function HistoryView() {
                       </div>
                     )}
 
-                    {!isReversedOriginal && !isReversal && (
-                      <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
+                    <div style={{ marginTop: '10px', display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                      <WhatsAppShareButton
+                        transaction={tx}
+                        label="Share Slip on WhatsApp"
+                        variant="solid"
+                        style={{ padding: '6px 12px', fontSize: '0.74rem' }}
+                      />
+
+                      {!isReversedOriginal && !isReversal && (
                         <button
                           type="button"
                           className="btn btn-secondary"
@@ -326,8 +360,8 @@ export default function HistoryView() {
                         >
                           <RotateCcw size={13} /> Correct / Reverse Entry
                         </button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
