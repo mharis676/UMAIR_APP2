@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowDownToLine, ArrowUpFromLine, Check, ArrowLeft, Calendar, FileText, Building2, Package } from 'lucide-react';
+import { ArrowDownToLine, ArrowUpFromLine, Check, ArrowLeft, Calendar, FileText, Building2, User, Package } from 'lucide-react';
 
 export default function ConfirmDialog({
   isOpen,
@@ -136,16 +136,20 @@ export default function ConfirmDialog({
 
         {/* Details list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', fontSize: '0.84rem' }}>
-          {/* Received from / Delivered to */}
+          {/* Received from / Deliver to */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
-            <Building2 size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
-            <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-              {isReceive ? 'Received from:' : 'Delivered to:'}
+            {isReceive ? (
+              <Building2 size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            ) : (
+              <User size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+            )}
+            <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+              {isReceive ? 'Received from:' : 'Deliver to:'}
             </span>
             {onPartyChange ? (
               <input
                 type="text"
-                placeholder={isReceive ? 'e.g. Supplier (Optional)' : 'e.g. Recipient (Optional)'}
+                placeholder={isReceive ? 'Supplier name (Optional)' : 'Recipient name (Optional)'}
                 value={party || ''}
                 onChange={(e) => onPartyChange(e.target.value)}
                 style={{
@@ -153,7 +157,7 @@ export default function ConfirmDialog({
                   width: '56%',
                   maxWidth: '220px',
                   background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-color)',
+                  border: '1.5px solid var(--border-color)',
                   borderRadius: '8px',
                   padding: '5px 8px',
                   fontSize: '0.82rem',
