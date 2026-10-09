@@ -50,7 +50,10 @@ export function exportHistoryPDF(transactions = []) {
       minute: '2-digit'
     });
 
-    const partyRef = [t.party, t.refNumber ? `Ref: ${t.refNumber}` : ''].filter(Boolean).join(' | ');
+    const partyLabel = t.party
+      ? (isReceive ? 'From: ' + t.party : isDeliver ? 'To: ' + t.party : t.party)
+      : '';
+    const partyRef = [partyLabel, t.refNumber ? `Ref: ${t.refNumber}` : ''].filter(Boolean).join(' | ');
 
     return [
       idx + 1,

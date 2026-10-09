@@ -239,18 +239,19 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
             </div>
           </div>
 
-          {/* Party (Supplier / Recipient) */}
+          {/* Party (Received from / Deliver to) */}
           <div className="form-group">
             <label className="form-label">
-              <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <Building2 size={13} /> {isReceive ? 'Supplier Name' : 'Recipient / Customer'}
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                {isReceive ? <Building2 size={13} color="var(--receive-green)" /> : <User size={13} color="var(--deliver-blue)" />}
+                {isReceive ? 'Received from (Supplier)' : 'Deliver to (Recipient)'}
               </span>
               <span className="optional">Optional</span>
             </label>
             <input
               type="text"
               className="input"
-              placeholder={isReceive ? "Supplier / Vendor name..." : "Recipient, driver or store..."}
+              placeholder={isReceive ? "Supplier / Vendor name..." : "Recipient, client or store..."}
               value={party}
               onChange={(e) => setParty(e.target.value)}
             />
