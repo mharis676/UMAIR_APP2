@@ -12,17 +12,31 @@ export const UNIT_OPTIONS = [
   'units'
 ];
 
-export const CATEGORY_OPTIONS = [
-  'Confectionery & Chocolates',
-  'Perfumes & Fragrances',
-  'Cosmetics & Skincare',
-  'Groceries & Foods',
-  'Electronics & Accessories',
-  'Beverages',
-  'Pharmaceuticals',
-  'Apparel & Textiles',
-  'General Supplies'
+export const CATEGORIES_META = [
+  { name: 'Confectionery & Chocolates', emoji: '🍫', color: '#f59e0b', bg: '#fef3c7' },
+  { name: 'Perfumes & Fragrances', emoji: '🌸', color: '#ec4899', bg: '#fce7f3' },
+  { name: 'Cosmetics & Skincare', emoji: '💄', color: '#8b5cf6', bg: '#ede9fe' },
+  { name: 'Groceries & Foods', emoji: '🍚', color: '#10b981', bg: '#d1fae5' },
+  { name: 'Electronics & Accessories', emoji: '⚡', color: '#06b6d4', bg: '#cffafe' },
+  { name: 'Beverages', emoji: '🥤', color: '#3b82f6', bg: '#dbeafe' },
+  { name: 'Pharmaceuticals', emoji: '💊', color: '#ef4444', bg: '#fee2e2' },
+  { name: 'Apparel & Textiles', emoji: '👕', color: '#6366f1', bg: '#e0e7ff' },
+  { name: 'General Supplies', emoji: '📦', color: '#64748b', bg: '#f1f5f9' }
 ];
+
+export const CATEGORY_OPTIONS = CATEGORIES_META.map(c => c.name);
+
+export function getCategoryInfo(categoryName) {
+  const found = CATEGORIES_META.find(c => c.name.toLowerCase() === (categoryName || '').toLowerCase());
+  if (found) return found;
+  // Partial matches
+  if ((categoryName || '').toLowerCase().includes('choc')) return CATEGORIES_META[0];
+  if ((categoryName || '').toLowerCase().includes('perf')) return CATEGORIES_META[1];
+  if ((categoryName || '').toLowerCase().includes('cosm')) return CATEGORIES_META[2];
+  if ((categoryName || '').toLowerCase().includes('groc')) return CATEGORIES_META[3];
+  if ((categoryName || '').toLowerCase().includes('elec')) return CATEGORIES_META[4];
+  return { name: categoryName || 'Other', emoji: '📦', color: '#64748b', bg: '#f1f5f9' };
+}
 
 export const INITIAL_PRODUCTS = [
   {
@@ -93,11 +107,11 @@ export const INITIAL_TRANSACTIONS = [
     productId: 'prod-1',
     productName: 'Ferrero Rocher Box 24s',
     unit: 'boxes',
-    type: 'RECEIVED', // 'RECEIVED' | 'DELIVERED' | 'REVERSAL'
+    type: 'RECEIVED',
     quantity: 30,
     prevBalance: 20,
     newBalance: 50,
-    party: 'Ferrero Logistics Dubai', // supplier or recipient
+    party: 'Ferrero Logistics Dubai',
     refNumber: 'GRN-9841',
     notes: 'Initial restock from regional hub',
     operator: 'Umair (Store Manager)',

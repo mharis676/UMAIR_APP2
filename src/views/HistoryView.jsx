@@ -5,14 +5,11 @@ import {
   ArrowDownToLine, 
   ArrowUpFromLine, 
   RotateCcw, 
-  Filter, 
-  Calendar, 
   User, 
   FileText, 
   Building2, 
   Download,
-  CheckCircle2,
-  AlertCircle
+  X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { storage } from '../storage';
@@ -22,14 +19,11 @@ export default function HistoryView() {
   const { transactions, showToast } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('ALL'); // 'ALL' | 'RECEIVED' | 'DELIVERED' | 'REVERSAL'
-  const [dateFilter, setDateFilter] = useState('ALL'); // 'ALL' | 'TODAY' | 'WEEK' | 'MONTH'
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [dateFilter, setDateFilter] = useState('ALL');
   
-  // Reversal Modal
   const [selectedTxForReversal, setSelectedTxForReversal] = useState(null);
   const [isReversalOpen, setIsReversalOpen] = useState(false);
-
-  // Detail Modal / expanded card view
   const [expandedTxId, setExpandedTxId] = useState(null);
 
   const filteredTransactions = useMemo(() => {
@@ -39,11 +33,9 @@ export default function HistoryView() {
     const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
     return transactions.filter((tx) => {
-      // Search
       const searchStr = `${tx.productName} ${tx.refNumber || ''} ${tx.party || ''} ${tx.notes || ''} ${tx.operator || ''}`.toLowerCase();
       const matchSearch = searchStr.includes(searchTerm.toLowerCase());
 
-      // Type
       let matchType = true;
       if (typeFilter === 'RECEIVED') {
         matchType = tx.type === 'RECEIVED';
@@ -53,7 +45,6 @@ export default function HistoryView() {
         matchType = tx.type.includes('REVERSAL') || tx.reversed;
       }
 
-      // Date
       let matchDate = true;
       const txDate = new Date(tx.timestamp);
       if (dateFilter === 'TODAY') {
@@ -80,21 +71,21 @@ export default function HistoryView() {
   };
 
   return (
-    <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
+    <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
       {/* Title & CSV Export */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }} className="font-heading">
-            Transaction History
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.15 }} className="font-heading">
+            History & Logs
           </h2>
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            Complete audit trail of stock received & delivered
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Complete audit trail of all transactions
           </p>
         </div>
 
         <button
           className="btn btn-secondary"
-          style={{ padding: '8px 12px', fontSize: '0.78rem' }}
+          style={{ padding: '8px 12px', fontSize: '0.78rem', borderRadius: '10px' }}
           onClick={handleExportCSV}
           title="Export records to CSV"
         >
@@ -106,69 +97,87 @@ export default function HistoryView() {
       <div style={{ position: 'relative', marginBottom: '12px' }}>
         <Search
           size={16}
-          color="#94a3b8"
-          style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+          color="var(--text-dim)"
+          style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
         />
         <input
           type="text"
           className="input"
-          placeholder="Search by product, reference #, supplier or notes..."
-          style={{ paddingLeft: '38px', fontSize: '0.88rem' }}
+          placeholder="Search by product, ref #, party or notes..."
+          style={{ paddingLeft: '40px', paddingRight: searchTerm ? '38px' : '14px', fontSize: '0.9rem', borderRadius: '12px' }}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        {searchTerm && (
+          <button
+            type="button"
+            onClick={() => setSearchTerm('')}
+            style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
-      {/* Filters: Type & Date Range */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px' }}>
-        <div>
-          <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px', display: 'block' }}>
-            Transaction Type
-          </label>
-          <select
-            className="select"
-            style={{ padding: '7px 10px', fontSize: '0.78rem' }}
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+      {/* Type Filter Tabs */}
+      <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '10px', scrollbarWidth: 'none' }}>
+        {[
+          { id: 'ALL', label: 'All Records' },
+          { id: 'RECEIVED', label: '📥 Received Only' },
+          { id: 'DELIVERED', label: '📤 Delivered Only' },
+          { id: 'REVERSAL', label: '🔄 Reversals' }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setTypeFilter(tab.id)}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '999px',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              whiteSpace: 'nowrap',
+              cursor: 'pointer',
+              background: typeFilter === tab.id ? 'var(--primary)' : 'var(--bg-card)',
+              border: typeFilter === tab.id ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+              color: typeFilter === tab.id ? '#ffffff' : 'var(--text-muted)',
+              transition: 'all 0.15s ease'
+            }}
           >
-            <option value="ALL">All Types</option>
-            <option value="RECEIVED">Received Only</option>
-            <option value="DELIVERED">Delivered Only</option>
-            <option value="REVERSAL">Reversals & Corrected</option>
-          </select>
-        </div>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-        <div>
-          <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: '4px', display: 'block' }}>
-            Date Range
-          </label>
-          <select
-            className="select"
-            style={{ padding: '7px 10px', fontSize: '0.78rem' }}
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-          >
-            <option value="ALL">All Time</option>
-            <option value="TODAY">Today</option>
-            <option value="WEEK">Last 7 Days</option>
-            <option value="MONTH">This Month</option>
-          </select>
-        </div>
+      {/* Date Range Selector */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '14px', gap: '8px' }}>
+        <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Timeframe:</span>
+        <select
+          className="select"
+          style={{ width: 'auto', padding: '5px 10px', fontSize: '0.78rem', borderRadius: '8px' }}
+          value={dateFilter}
+          onChange={(e) => setDateFilter(e.target.value)}
+        >
+          <option value="ALL">All Time</option>
+          <option value="TODAY">Today</option>
+          <option value="WEEK">Last 7 Days</option>
+          <option value="MONTH">This Month</option>
+        </select>
       </div>
 
       {/* Transaction Records List */}
       {filteredTransactions.length === 0 ? (
-        <div className="card" style={{ textAlign: 'center', padding: '40px 20px' }}>
-          <History size={40} color="#475569" style={{ margin: '0 auto 12px auto' }} />
-          <h4 style={{ fontSize: '1rem', color: 'var(--text-main)', marginBottom: '4px' }}>
-            No transactions match criteria
+        <div className="card" style={{ textAlign: 'center', padding: '36px 16px' }}>
+          <History size={38} color="var(--text-dim)" style={{ margin: '0 auto 10px auto' }} />
+          <h4 style={{ fontSize: '1rem', color: 'var(--text-main)', fontWeight: 700, marginBottom: '4px' }}>
+            No records found
           </h4>
-          <p style={{ color: 'var(--text-dim)', fontSize: '0.8rem' }}>
-            Try clearing filters or search keywords.
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+            Try clearing search keywords or filters.
           </p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {filteredTransactions.map((tx) => {
             const isReceive = tx.type === 'RECEIVED';
             const isDeliver = tx.type === 'DELIVERED';
@@ -183,12 +192,13 @@ export default function HistoryView() {
                 onClick={() => setExpandedTxId(isExpanded ? null : tx.id)}
                 style={{
                   cursor: 'pointer',
+                  borderRadius: '16px',
                   borderLeft: isReceive
-                    ? '3px solid #10b981'
+                    ? '4px solid var(--receive-green)'
                     : isDeliver
-                    ? '3px solid #0284c7'
-                    : '3px solid #ef4444',
-                  background: isReversedOriginal ? 'rgba(30, 41, 59, 0.5)' : undefined
+                    ? '4px solid var(--deliver-blue)'
+                    : '4px solid var(--accent-rose)',
+                  opacity: isReversedOriginal ? 0.75 : 1
                 }}
               >
                 {/* Header Row */}
@@ -203,10 +213,10 @@ export default function HistoryView() {
                           : 'badge-reversed'
                       }`}
                     >
-                      {isReceive && <ArrowDownToLine size={12} />}
-                      {isDeliver && <ArrowUpFromLine size={12} />}
-                      {isReversal && <RotateCcw size={12} />}
-                      {isReceive ? 'Stock Received' : isDeliver ? 'Stock Delivered' : 'Reversal Entry'}
+                      {isReceive && <ArrowDownToLine size={12} strokeWidth={2.5} />}
+                      {isDeliver && <ArrowUpFromLine size={12} strokeWidth={2.5} />}
+                      {isReversal && <RotateCcw size={12} strokeWidth={2.5} />}
+                      {isReceive ? 'Received' : isDeliver ? 'Delivered' : 'Reversal'}
                     </span>
 
                     {isReversedOriginal && (
@@ -216,7 +226,7 @@ export default function HistoryView() {
                     )}
                   </div>
 
-                  <span style={{ fontSize: '0.72rem', color: 'var(--text-dim)' }}>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 500 }}>
                     {new Date(tx.timestamp).toLocaleString([], {
                       month: 'short',
                       day: 'numeric',
@@ -233,24 +243,24 @@ export default function HistoryView() {
                       className="font-heading"
                       style={{
                         fontSize: '1rem',
-                        fontWeight: 600,
-                        color: isReversedOriginal ? '#94a3b8' : 'var(--text-main)',
+                        fontWeight: 700,
+                        color: isReversedOriginal ? 'var(--text-muted)' : 'var(--text-main)',
                         textDecoration: isReversedOriginal ? 'line-through' : 'none'
                       }}
                     >
                       {tx.productName}
                     </h3>
 
-                    {/* Supplier / Recipient / Ref */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    {/* Party & Reference */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       {tx.party && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Building2 size={12} /> {tx.party}
+                          <Building2 size={13} /> {tx.party}
                         </span>
                       )}
                       {tx.refNumber && (
                         <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <FileText size={12} /> Ref: {tx.refNumber}
+                          <FileText size={13} /> Ref: {tx.refNumber}
                         </span>
                       )}
                     </div>
@@ -262,20 +272,20 @@ export default function HistoryView() {
                       style={{
                         fontFamily: 'var(--font-heading)',
                         fontSize: '1.2rem',
-                        fontWeight: 700,
-                        color: isReceive ? '#34d399' : isDeliver ? '#38bdf8' : '#f87171'
+                        fontWeight: 800,
+                        color: isReceive ? 'var(--receive-green)' : isDeliver ? 'var(--deliver-blue)' : 'var(--accent-rose)'
                       }}
                     >
                       {isReceive ? '+' : isDeliver ? '-' : ''}
                       {tx.quantity} {tx.unit}
                     </div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
-                      {tx.prevBalance} &rarr; <strong style={{ color: 'var(--text-main)' }}>{tx.newBalance}</strong> {tx.unit}
+                    <div style={{ fontSize: '0.74rem', color: 'var(--text-dim)', fontWeight: 600 }}>
+                      Bal: {tx.prevBalance} ➔ <strong>{tx.newBalance}</strong>
                     </div>
                   </div>
                 </div>
 
-                {/* Expanded Details or Note */}
+                {/* Expandable Details and Reversal Option */}
                 {(isExpanded || tx.notes || isReversedOriginal) && (
                   <div
                     style={{
@@ -285,39 +295,36 @@ export default function HistoryView() {
                       fontSize: '0.78rem',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '4px',
-                      color: '#cbd5e1'
+                      gap: '4px'
                     }}
                   >
                     {tx.notes && (
-                      <div>
+                      <div style={{ color: 'var(--text-main)' }}>
                         <strong style={{ color: 'var(--text-muted)' }}>Notes: </strong>
                         {tx.notes}
                       </div>
                     )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)' }}>
                       <User size={12} />
-                      <span>Recorded by: {tx.operator || 'Storekeeper'}</span>
-                      <span>• Tx ID: {tx.id}</span>
+                      <span>Recorded by: <strong>{tx.operator || 'Storekeeper'}</strong></span>
+                      <span>• #{tx.id}</span>
                     </div>
 
-                    {/* If reversed original */}
                     {isReversedOriginal && tx.reversalReason && (
-                      <div style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.25)', padding: '6px 8px', borderRadius: '6px', marginTop: '4px', color: '#fca5a5' }}>
+                      <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.25)', padding: '6px 10px', borderRadius: '8px', marginTop: '4px', color: 'var(--accent-rose)' }}>
                         <strong>Reversal Reason:</strong> {tx.reversalReason}
                       </div>
                     )}
 
-                    {/* Action to reverse this transaction if eligible */}
                     {!isReversedOriginal && !isReversal && (
                       <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
                         <button
                           type="button"
                           className="btn btn-secondary"
-                          style={{ fontSize: '0.72rem', padding: '5px 10px', color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+                          style={{ fontSize: '0.74rem', padding: '6px 12px', color: 'var(--accent-rose)', borderColor: 'rgba(225, 29, 72, 0.3)' }}
                           onClick={(e) => handleOpenReversal(tx, e)}
                         >
-                          <RotateCcw size={12} /> Correct / Reverse Entry
+                          <RotateCcw size={13} /> Correct / Reverse Entry
                         </button>
                       </div>
                     )}

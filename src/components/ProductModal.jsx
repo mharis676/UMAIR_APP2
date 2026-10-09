@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Sparkles, Check } from 'lucide-react';
+import { X, Sparkles, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { UNIT_OPTIONS, CATEGORY_OPTIONS } from '../types';
+import { UNIT_OPTIONS, CATEGORIES_META, CATEGORY_OPTIONS } from '../types';
 
 export default function ProductModal({ isOpen, onClose, editingProduct = null, onCreatedCallback = null }) {
   const { addProduct, updateProduct } = useApp();
@@ -103,7 +103,7 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
         </div>
 
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '10px 14px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.85rem' }}>
+          <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '10px 14px', borderRadius: '10px', marginBottom: '14px', fontSize: '0.85rem' }}>
             {error}
           </div>
         )}
@@ -144,7 +144,7 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
                 onClick={() => setCode(`PRD-${Math.floor(100 + Math.random() * 900)}`)}
                 title="Generate SKU Code"
               >
-                <Sparkles size={16} />
+                <Sparkles size={16} color="var(--primary)" />
               </button>
             </div>
           </div>
@@ -159,12 +159,12 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              {CATEGORY_OPTIONS.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat}
+              {CATEGORIES_META.map((cat) => (
+                <option key={cat.name} value={cat.name}>
+                  {cat.emoji} {cat.name}
                 </option>
               ))}
-              <option value="Other">Other (Custom Category)</option>
+              <option value="Other">📦 Other (Custom Category)</option>
             </select>
             {category === 'Other' && (
               <input
@@ -220,7 +220,7 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
                 value={initialStock}
                 onChange={(e) => setInitialStock(e.target.value)}
               />
-              <p style={{ fontSize: '0.72rem', color: 'var(--text-dim)', marginTop: '4px' }}>
+              <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '4px' }}>
                 Stock can also be added anytime using the "Receive Stock" screen.
               </p>
             </div>
@@ -230,7 +230,7 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
             <button
               type="button"
               className="btn btn-secondary"
-              style={{ flex: 1 }}
+              style={{ flex: 1, padding: '14px' }}
               onClick={onClose}
             >
               Cancel
@@ -238,9 +238,9 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
             <button
               type="submit"
               className="btn btn-primary"
-              style={{ flex: 2 }}
+              style={{ flex: 2, padding: '14px' }}
             >
-              <Check size={18} />
+              <Check size={18} strokeWidth={2.5} />
               {editingProduct ? 'Save Changes' : 'Create Product'}
             </button>
           </div>

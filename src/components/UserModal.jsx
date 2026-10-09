@@ -33,7 +33,7 @@ export default function UserModal({ isOpen, onClose }) {
       <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <User size={18} color="#818cf8" />
+            <User size={18} color="var(--primary)" />
             <h3 className="modal-title font-heading">Switch Operator / User</h3>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close user modal">
@@ -42,7 +42,7 @@ export default function UserModal({ isOpen, onClose }) {
         </div>
 
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-          Select or enter the name of the person performing stock receiving and delivery. Every transaction records who executed it.
+          Select or enter the operator name. Every stock receipt and delivery records who performed the transaction.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
@@ -58,17 +58,18 @@ export default function UserModal({ isOpen, onClose }) {
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   padding: '12px 14px',
-                  borderRadius: '10px',
-                  background: isCurrent ? 'rgba(99, 102, 241, 0.15)' : 'rgba(255, 255, 255, 0.04)',
-                  border: isCurrent ? '1px solid #6366f1' : '1px solid var(--border-color)',
-                  color: isCurrent ? '#a5b4fc' : 'var(--text-main)',
+                  borderRadius: '12px',
+                  background: isCurrent ? 'var(--primary-light)' : 'var(--bg-surface)',
+                  border: isCurrent ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
+                  color: isCurrent ? 'var(--primary)' : 'var(--text-main)',
                   cursor: 'pointer',
-                  fontWeight: 500,
-                  fontSize: '0.9rem'
+                  fontWeight: 600,
+                  fontSize: '0.9rem',
+                  transition: 'all 0.15s ease'
                 }}
               >
                 <span>{p}</span>
-                {isCurrent && <Check size={16} color="#818cf8" />}
+                {isCurrent && <Check size={18} color="var(--primary)" strokeWidth={2.5} />}
               </button>
             );
           })}
@@ -86,8 +87,8 @@ export default function UserModal({ isOpen, onClose }) {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block">
-            <Check size={18} />
+          <button type="submit" className="btn btn-primary btn-block" style={{ padding: '14px' }}>
+            <Check size={18} strokeWidth={2.5} />
             Set Active Operator
           </button>
         </form>

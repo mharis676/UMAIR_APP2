@@ -56,7 +56,7 @@ export default function BackupModal({ isOpen, onClose }) {
       <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Database size={18} color="#818cf8" />
+            <Database size={18} color="var(--primary)" />
             <h3 className="modal-title font-heading">Data & Reports</h3>
           </div>
           <button className="icon-btn" onClick={onClose} aria-label="Close modal">
@@ -65,39 +65,45 @@ export default function BackupModal({ isOpen, onClose }) {
         </div>
 
         <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginBottom: '16px' }}>
-          Reliable local storage keeps all products and transactions secure. You can also export backups or reports anytime.
+          Data is persistently saved on this device. You can export snapshots or download CSV reports for spreadsheets anytime.
         </p>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
           {/* Export JSON */}
-          <button
-            type="button"
-            className="action-btn-large"
+          <div
+            className="card"
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '12px 14px' }}
             onClick={handleExportJSON}
           >
-            <div className="action-icon-circle green">
+            <div
+              className="category-avatar"
+              style={{ background: 'var(--receive-green-light)', color: 'var(--receive-green)', width: '42px', height: '42px' }}
+            >
               <Download size={20} />
             </div>
-            <div>
-              <span className="action-text-title">Export Backup (JSON)</span>
-              <span className="action-text-desc">Save entire inventory & transactions snapshot</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>Export Full Backup</div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Save complete products & transactions (JSON)</div>
             </div>
-          </button>
+          </div>
 
           {/* Import JSON */}
-          <button
-            type="button"
-            className="action-btn-large"
+          <div
+            className="card"
+            style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', padding: '12px 14px' }}
             onClick={() => fileInputRef.current?.click()}
           >
-            <div className="action-icon-circle cyan">
+            <div
+              className="category-avatar"
+              style={{ background: 'var(--deliver-blue-light)', color: 'var(--deliver-blue)', width: '42px', height: '42px' }}
+            >
               <Upload size={20} />
             </div>
-            <div>
-              <span className="action-text-title">Restore Backup (JSON)</span>
-              <span className="action-text-desc">Load previously saved data file</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>Restore Backup</div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Load a previously exported JSON backup file</div>
             </div>
-          </button>
+          </div>
           <input
             type="file"
             ref={fileInputRef}
@@ -111,32 +117,32 @@ export default function BackupModal({ isOpen, onClose }) {
             <button
               type="button"
               className="btn btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '10px' }}
+              style={{ fontSize: '0.82rem', padding: '12px' }}
               onClick={handleExportHistoryCSV}
             >
-              <FileSpreadsheet size={16} />
-              CSV Transactions
+              <FileSpreadsheet size={16} color="var(--primary)" />
+              CSV History
             </button>
             <button
               type="button"
               className="btn btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '10px' }}
+              style={{ fontSize: '0.82rem', padding: '12px' }}
               onClick={handleExportInventoryCSV}
             >
-              <FileSpreadsheet size={16} />
-              CSV Inventory
+              <FileSpreadsheet size={16} color="var(--primary)" />
+              CSV Stock
             </button>
           </div>
         </div>
 
         {/* GitHub Actions and Mobile App info */}
-        <div style={{ background: '#0d131f', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '12px 14px', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <Smartphone size={16} color="#38bdf8" />
-            <strong style={{ fontSize: '0.85rem', color: '#f8fafc' }}>Mobile & GitHub Actions Ready</strong>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '12px 14px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+            <Smartphone size={16} color="var(--primary)" />
+            <strong style={{ fontSize: '0.85rem', color: 'var(--text-main)' }}>Mobile APK & GitHub Actions</strong>
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: '1.4' }}>
-            Native Android capacitor configuration is ready in <code>/android</code> and GitHub Actions workflows are configured in <code>.github/workflows/build-android-apk.yml</code> to build an APK automatically upon push!
+            Configured in <code>.github/workflows/build-android-apk.yml</code>. Pushing to GitHub builds a downloadable Android APK automatically under Actions artifacts!
           </p>
         </div>
 
@@ -144,11 +150,11 @@ export default function BackupModal({ isOpen, onClose }) {
         <button
           type="button"
           className="btn btn-secondary btn-block"
-          style={{ color: '#f87171', borderColor: 'rgba(239, 68, 68, 0.3)' }}
+          style={{ color: 'var(--accent-rose)', borderColor: 'rgba(225, 29, 72, 0.3)', padding: '12px' }}
           onClick={handleResetData}
         >
-          <RotateCcw size={16} />
-          Reload Sample Demo Data
+          <RotateCcw size={15} />
+          Reload Sample Demo Products
         </button>
       </div>
     </div>

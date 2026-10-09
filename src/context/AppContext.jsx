@@ -5,11 +5,22 @@ import { storage } from '../storage';
 const AppContext = createContext(null);
 
 export function AppProvider({ children }) {
+  const [theme, setTheme] = useState(() => localStorage.getItem('stocktrack_theme_v1') || 'light');
   const [products, setProducts] = useState(() => storage.getProducts());
   const [transactions, setTransactions] = useState(() => storage.getTransactions());
   const [operator, setOperator] = useState(() => storage.getOperator());
   const [currentTab, setCurrentTab] = useState('dashboard');
   const [toasts, setToasts] = useState([]);
+  
+  // Apply theme to document
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('stocktrack_theme_v1', theme);
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  }, []);
   
   // Selected product shortcut for navigating to Receive / Deliver from inventory
   const [preselectedProductId, setPreselectedProductId] = useState(null);
@@ -357,7 +368,9 @@ export function AppProvider({ children }) {
         preselectedProductId,
         setPreselectedProductId,
         navigateToReceiveWithProduct,
-        navigateToDeliverWithProduct
+        navigateToDeliverWithProduct,
+        theme,
+        toggleTheme
       }}
     >
       {children}

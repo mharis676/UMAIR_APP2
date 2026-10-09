@@ -5,14 +5,15 @@ import {
   CheckCircle2, 
   Building2, 
   FileText, 
-  Calendar, 
   Clock, 
-  Search,
-  Sparkles,
   ArrowRight,
-  RotateCcw
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { getCategoryInfo } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ProductModal from '../components/ProductModal';
 
@@ -27,26 +28,20 @@ export default function ReceiveView() {
   } = useApp();
 
   const [selectedProductId, setSelectedProductId] = useState('');
-  const [quantity, setQuantity] = useState('');
+  const [quantity, setQuantity] = useState('10');
   const [supplier, setSupplier] = useState('');
   const [refNumber, setRefNumber] = useState('');
   const [notes, setNotes] = useState('');
-  
-  // Custom date/time or auto current
-  const [useCurrentTime, setUseCurrentTime] = useState(true);
-  const [customDateTime, setCustomDateTime] = useState(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  });
+  const [showOptionalFields, setShowOptionalFields] = useState(false);
+  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
 
-  // Modal states
+  // Modals
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [lastSuccessResult, setLastSuccessResult] = useState(null);
   const [error, setError] = useState('');
 
-  // Handle preselection when navigated from another screen
   useEffect(() => {
     if (preselectedProductId) {
       setSelectedProductId(preselectedProductId);
@@ -60,6 +55,20 @@ export default function ReceiveView() {
   const currentStock = selectedProduct ? selectedProduct.stock : 0;
   const numQuantity = parseInt(quantity, 10) || 0;
   const calculatedNewBalance = currentStock + numQuantity;
+  const categoryInfo = selectedProduct ? getCategoryInfo(selectedProduct.category) : null;
+
+  const handleAdjustQuantity = (delta) => {
+    const current = parseInt(quantity, 10) || 0;
+    const next = Math.max(1, current + delta);
+    setQuantity(String(next));
+    setError('');
+  };
+
+  const handleAddPreset = (amount) => {
+    const current = parseInt(quantity, 10) || 0;
+    setQuantity(String(current + amount));
+    setError('');
+  };
 
   const handleOpenReview = (e) => {
     e.preventDefault();
@@ -68,7 +77,7 @@ export default function ReceiveView() {
       return;
     }
     if (numQuantity <= 0) {
-      setError('Quantity received must be a positive number greater than 0.');
+      setError('Quantity received must be at least 1.');
       return;
     }
     setError('');
@@ -76,7 +85,7 @@ export default function ReceiveView() {
   };
 
   const handleConfirmSubmit = () => {
-    const timestamp = useCurrentTime ? new Date().toISOString() : new Date(customDateTime).toISOString();
+    const timestamp = new Date().toISOString();
 
     const res = receiveStock({
       productId: selectedProduct.id,
@@ -98,75 +107,78 @@ export default function ReceiveView() {
         refNumber: res.transaction.refNumber,
         txId: res.transaction.id
       });
-      // Reset form
-      setQuantity('');
+      setQuantity('10');
       setSupplier('');
       setRefNumber('');
       setNotes('');
+      setShowOptionalFields(false);
     } else {
       setError(res.error || 'Failed to record stock receiving.');
     }
   };
 
-  const handleResetForNew = () => {
-    setLastSuccessResult(null);
-  };
+  const filteredPickerProducts = products.filter((p) =>
+    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
+    (p.code && p.code.toLowerCase().includes(productSearch.toLowerCase()))
+  );
 
   return (
-    <div style={{ animation: 'fadeIn 0.2s ease-out' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+    <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
+      {/* Title */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
         <div
           style={{
-            width: '36px',
-            height: '36px',
-            borderRadius: '10px',
-            background: 'rgba(16, 185, 129, 0.15)',
-            color: '#34d399',
+            width: '42px',
+            height: '42px',
+            borderRadius: '12px',
+            background: 'var(--receive-green-light)',
+            color: 'var(--receive-green)',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.2)'
           }}
         >
-          <ArrowDownToLine size={20} />
+          <ArrowDownToLine size={22} strokeWidth={2.4} />
         </div>
         <div>
-          <h2 style={{ fontSize: '1.3rem', fontWeight: 700 }} className="font-heading">
+          <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.15 }} className="font-heading">
             Receive Stock
           </h2>
-          <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            Record inbound goods & update inventory
+          <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+            Record inbound goods and update balance
           </p>
         </div>
       </div>
 
-      {/* Success Banner if just recorded */}
+      {/* Success Card */}
       {lastSuccessResult && (
         <div className="success-card">
           <div className="success-icon-wrap">
-            <CheckCircle2 size={30} />
+            <CheckCircle2 size={32} />
           </div>
-          <h3 className="font-heading" style={{ fontSize: '1.2rem', color: '#ecfdf5', marginBottom: '6px' }}>
-            Stock Received Successfully!
+          <h3 className="font-heading" style={{ fontSize: '1.25rem', color: '#064e3b', marginBottom: '6px' }}>
+            Stock Added Successfully!
           </h3>
-          <p style={{ fontSize: '0.9rem', color: '#a7f3d0', marginBottom: '14px', lineHeight: '1.4' }}>
+          <p style={{ fontSize: '0.92rem', color: '#065f46', marginBottom: '16px', lineHeight: '1.4' }}>
             <strong>{lastSuccessResult.product.name}</strong><br />
-            Current stock: {lastSuccessResult.prevBalance} {lastSuccessResult.product.unit}. Received: {lastSuccessResult.receivedQuantity} {lastSuccessResult.product.unit}.<br />
-            <span style={{ fontSize: '1.1rem', fontWeight: 700, color: '#ffffff' }}>
-              New balance: {lastSuccessResult.newBalance} {lastSuccessResult.product.unit}
+            Previous: {lastSuccessResult.prevBalance} {lastSuccessResult.product.unit} ➔ Received: +{lastSuccessResult.receivedQuantity} {lastSuccessResult.product.unit}<br />
+            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#047857' }}>
+              New Balance: {lastSuccessResult.newBalance} {lastSuccessResult.product.unit}
             </span>
           </p>
 
-          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
             <button
               className="btn btn-secondary"
-              style={{ fontSize: '0.82rem', padding: '10px 14px' }}
-              onClick={handleResetForNew}
+              style={{ fontSize: '0.84rem', padding: '10px 16px' }}
+              onClick={() => setLastSuccessResult(null)}
             >
-              Receive More Stock
+              Receive Another
             </button>
             <button
               className="btn btn-primary"
-              style={{ fontSize: '0.82rem', padding: '10px 14px' }}
+              style={{ fontSize: '0.84rem', padding: '10px 16px' }}
               onClick={() => setCurrentTab('history')}
             >
               View in History <ArrowRight size={14} />
@@ -176,28 +188,28 @@ export default function ReceiveView() {
       )}
 
       {error && (
-        <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '12px 14px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.85rem' }}>
+        <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.86rem', fontWeight: 500 }}>
           {error}
         </div>
       )}
 
       <form onSubmit={handleOpenReview}>
-        {/* Step 1: Product Selection */}
+        {/* Step 1: Select Product Card */}
         <div className="form-group">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <label className="form-label" style={{ margin: 0 }}>
-              1. Select Product *
-            </label>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+            <span className="form-label" style={{ margin: 0 }}>
+              1. Select Product
+            </span>
             <button
               type="button"
               onClick={() => setIsProductModalOpen(true)}
               style={{
-                background: 'rgba(99, 102, 241, 0.15)',
-                border: '1px solid rgba(99, 102, 241, 0.3)',
-                color: '#a5b4fc',
-                borderRadius: '6px',
-                padding: '3px 8px',
-                fontSize: '0.72rem',
+                background: 'var(--primary-light)',
+                border: 'none',
+                color: 'var(--primary)',
+                borderRadius: '8px',
+                padding: '4px 10px',
+                fontSize: '0.78rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
@@ -205,172 +217,204 @@ export default function ReceiveView() {
                 gap: '4px'
               }}
             >
-              <Plus size={12} /> New Product
+              <Plus size={13} strokeWidth={2.5} /> New Product
             </button>
           </div>
 
-          <select
-            className="select"
-            value={selectedProductId}
-            onChange={(e) => {
-              setSelectedProductId(e.target.value);
-              setError('');
-            }}
-            required
-          >
-            {products.length === 0 && (
-              <option value="">No products available. Click New Product</option>
-            )}
-            {products.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name} ({p.code || 'No SKU'}) — Stock: {p.stock} {p.unit}
-              </option>
-            ))}
-          </select>
+          {selectedProduct ? (
+            <div
+              className="card"
+              onClick={() => setIsProductPickerOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                cursor: 'pointer',
+                borderColor: 'var(--border-focus)',
+                background: 'var(--bg-card)'
+              }}
+            >
+              <div
+                className="category-avatar"
+                style={{ background: categoryInfo?.bg || '#f1f5f9' }}
+              >
+                {categoryInfo?.emoji || '📦'}
+              </div>
+
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {selectedProduct.name}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                  <span className="badge badge-code">{selectedProduct.code || 'SKU'}</span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Current: <strong>{selectedProduct.stock} {selectedProduct.unit}</strong>
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-muted)',
+                  borderRadius: '8px',
+                  padding: '6px 10px',
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  flexShrink: 0
+                }}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn-secondary btn-block"
+              onClick={() => setIsProductPickerOpen(true)}
+            >
+              Tap to choose product
+            </button>
+          )}
         </div>
 
-        {/* Selected Product Current Stock Indicator */}
+        {/* Step 2: Quantity Stepper */}
         {selectedProduct && (
-          <div
-            style={{
-              background: '#0d131f',
-              border: '1px solid var(--border-color)',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '16px'
-            }}
-          >
-            <div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Current Available Stock</div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
-                {selectedProduct.stock} {selectedProduct.unit}
-              </div>
+          <div className="form-group">
+            <label className="form-label">
+              2. Quantity to Receive ({selectedProduct.unit})
+            </label>
+            <div className="stepper-container">
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() => handleAdjustQuantity(-1)}
+                disabled={numQuantity <= 1}
+              >
+                -
+              </button>
+              <input
+                type="number"
+                min="1"
+                className="stepper-input"
+                value={quantity}
+                onChange={(e) => {
+                  setQuantity(e.target.value);
+                  setError('');
+                }}
+                required
+              />
+              <button
+                type="button"
+                className="stepper-btn"
+                onClick={() => handleAdjustQuantity(1)}
+              >
+                +
+              </button>
             </div>
-            <span className="badge badge-category">{selectedProduct.category}</span>
+
+            {/* Quick Presets */}
+            <div className="quick-chip-row">
+              <button type="button" className="quick-chip" onClick={() => handleAddPreset(5)}>+5</button>
+              <button type="button" className="quick-chip" onClick={() => handleAddPreset(10)}>+10</button>
+              <button type="button" className="quick-chip" onClick={() => handleAddPreset(25)}>+25</button>
+              <button type="button" className="quick-chip" onClick={() => handleAddPreset(50)}>+50</button>
+              <button type="button" className="quick-chip" onClick={() => handleAddPreset(100)}>+100</button>
+            </div>
           </div>
         )}
 
-        {/* Step 2: Quantity Received */}
-        <div className="form-group">
-          <label className="form-label">
-            2. Quantity Received ({selectedProduct?.unit || 'units'}) *
-          </label>
-          <input
-            type="number"
-            min="1"
-            step="1"
-            className="input input-num-huge"
-            placeholder="0"
-            value={quantity}
-            onChange={(e) => {
-              setQuantity(e.target.value);
-              setError('');
-            }}
-            required
-          />
-        </div>
-
-        {/* Real-time Calculation Preview */}
+        {/* Calculation Visual Summary Card */}
         {selectedProduct && numQuantity > 0 && (
-          <div className="balance-preview-box">
-            <div className="balance-step-row">
-              <span style={{ color: 'var(--text-muted)' }}>Current Stock:</span>
-              <span>{currentStock} {selectedProduct.unit}</span>
+          <div className="calculation-card">
+            <div className="calc-row">
+              <span style={{ color: 'var(--text-muted)' }}>Current In-Stock:</span>
+              <span style={{ fontWeight: 600 }}>{currentStock} {selectedProduct.unit}</span>
             </div>
-            <div className="balance-step-row">
-              <span style={{ color: '#34d399', fontWeight: 600 }}>+ Received:</span>
-              <span style={{ color: '#34d399', fontWeight: 700 }}>+{numQuantity} {selectedProduct.unit}</span>
+            <div className="calc-row">
+              <span style={{ color: 'var(--receive-green)', fontWeight: 600 }}>+ Arriving Stock:</span>
+              <span style={{ color: 'var(--receive-green)', fontWeight: 700 }}>+{numQuantity} {selectedProduct.unit}</span>
             </div>
-            <div className="balance-step-row">
-              <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>New Balance:</span>
-              <span className="balance-final-num green">
+            <div className="calc-row final">
+              <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Updated Balance:</span>
+              <span className="calc-final-num green">
                 {calculatedNewBalance} {selectedProduct.unit}
               </span>
             </div>
           </div>
         )}
 
-        {/* Step 3: Optional Details */}
-        <div className="form-group">
-          <label className="form-label">
-            <span>Supplier / Source</span>
-            <span className="optional">Optional</span>
-          </label>
-          <div style={{ position: 'relative' }}>
-            <input
-              type="text"
-              className="input"
-              placeholder="e.g. Nestlé Logistics, Dior Distribution..."
-              value={supplier}
-              onChange={(e) => setSupplier(e.target.value)}
-            />
-          </div>
-        </div>
+        {/* Collapsible Optional Details */}
+        <div style={{ marginBottom: '18px' }}>
+          <button
+            type="button"
+            onClick={() => setShowOptionalFields(!showOptionalFields)}
+            style={{
+              width: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              background: 'var(--bg-surface)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px',
+              padding: '10px 14px',
+              color: 'var(--text-muted)',
+              fontSize: '0.84rem',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <span>{showOptionalFields ? 'Hide' : '+ Add'} Supplier, Ref # & Notes (Optional)</span>
+            {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-        <div className="form-group">
-          <label className="form-label">
-            <span>Reference / Delivery Slip Number</span>
-            <span className="optional">Optional</span>
-          </label>
-          <input
-            type="text"
-            className="input"
-            placeholder="e.g. GRN-1049, PO-8492, INV-002"
-            value={refNumber}
-            onChange={(e) => setRefNumber(e.target.value)}
-          />
-        </div>
+          {showOptionalFields && (
+            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
+              <div className="form-group">
+                <label className="form-label">
+                  <span>Supplier / Source</span>
+                  <span className="optional">Optional</span>
+                </label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="e.g. Ferrero Logistics, Dior Distribution..."
+                  value={supplier}
+                  onChange={(e) => setSupplier(e.target.value)}
+                />
+              </div>
 
-        <div className="form-group">
-          <label className="form-label">
-            <span>Notes / Remarks</span>
-            <span className="optional">Optional</span>
-          </label>
-          <input
-            type="text"
-            className="input"
-            placeholder="e.g. Fresh batch, expiry 2028, inspected"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
-        </div>
+              <div className="form-group">
+                <label className="form-label">
+                  <span>Reference / Delivery Order #</span>
+                  <span className="optional">Optional</span>
+                </label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="e.g. GRN-1049, PO-8492, INV-002"
+                  value={refNumber}
+                  onChange={(e) => setRefNumber(e.target.value)}
+                />
+              </div>
 
-        {/* Date & Time Settings */}
-        <div className="form-group">
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-            <label className="form-label" style={{ margin: 0 }}>
-              Date & Time Recorded
-            </label>
-            <button
-              type="button"
-              onClick={() => setUseCurrentTime(!useCurrentTime)}
-              style={{
-                background: 'transparent',
-                border: 'none',
-                color: '#818cf8',
-                fontSize: '0.72rem',
-                cursor: 'pointer',
-                fontWeight: 500
-              }}
-            >
-              {useCurrentTime ? 'Set Custom Date' : 'Use Current Date'}
-            </button>
-          </div>
-          {useCurrentTime ? (
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', background: '#0a0f1d', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Clock size={15} color="#818cf8" />
-              <span>Automatically recording current timestamp</span>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">
+                  <span>Notes / Remarks</span>
+                  <span className="optional">Optional</span>
+                </label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="e.g. Fresh batch, inspected by warehouse team"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
             </div>
-          ) : (
-            <input
-              type="datetime-local"
-              className="input"
-              value={customDateTime}
-              onChange={(e) => setCustomDateTime(e.target.value)}
-            />
           )}
         </div>
 
@@ -378,15 +422,95 @@ export default function ReceiveView() {
         <button
           type="submit"
           className="btn btn-success btn-block"
-          style={{ marginTop: '10px', padding: '14px' }}
+          style={{ padding: '16px' }}
           disabled={!selectedProduct || numQuantity <= 0}
         >
-          <ArrowDownToLine size={20} />
+          <ArrowDownToLine size={20} strokeWidth={2.4} />
           Review & Receive Stock
         </button>
       </form>
 
-      {/* Confirmation Step Dialog */}
+      {/* Visual Product Picker Bottom Sheet */}
+      {isProductPickerOpen && (
+        <div className="modal-overlay" onClick={() => setIsProductPickerOpen(false)}>
+          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title font-heading">Choose Product</h3>
+              <button
+                type="button"
+                className="icon-btn"
+                onClick={() => {
+                  setIsProductPickerOpen(false);
+                  setIsProductModalOpen(true);
+                }}
+                title="Create New Product"
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+
+            {/* Picker Search */}
+            <div style={{ position: 'relative', marginBottom: '14px' }}>
+              <Search
+                size={16}
+                color="var(--text-dim)"
+                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
+              />
+              <input
+                type="text"
+                className="input"
+                placeholder="Search products..."
+                style={{ paddingLeft: '38px', fontSize: '0.88rem' }}
+                value={productSearch}
+                onChange={(e) => setProductSearch(e.target.value)}
+                autoFocus
+              />
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '55vh', overflowY: 'auto' }}>
+              {filteredPickerProducts.map((p) => {
+                const cat = getCategoryInfo(p.category);
+                const isSelected = p.id === selectedProductId;
+
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      setSelectedProductId(p.id);
+                      setIsProductPickerOpen(false);
+                    }}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      background: isSelected ? 'var(--primary-light)' : 'var(--bg-surface)',
+                      border: isSelected ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div className="category-avatar" style={{ background: cat.bg, width: '38px', height: '38px', fontSize: '1.2rem' }}>
+                      {cat.emoji}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                        {p.name}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Stock: <strong>{p.stock} {p.unit}</strong>
+                      </div>
+                    </div>
+                    {isSelected && <Check size={18} color="var(--primary)" />}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
@@ -400,10 +524,10 @@ export default function ReceiveView() {
         refNumber={refNumber}
         notes={notes}
         operator={operator}
-        timestamp={useCurrentTime ? new Date().toISOString() : new Date(customDateTime).toISOString()}
+        timestamp={new Date().toISOString()}
       />
 
-      {/* Inline Add Product Modal */}
+      {/* Product Creation Modal */}
       <ProductModal
         isOpen={isProductModalOpen}
         onClose={() => setIsProductModalOpen(false)}

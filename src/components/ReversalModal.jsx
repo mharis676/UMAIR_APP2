@@ -13,7 +13,6 @@ export default function ReversalModal({ isOpen, onClose, transaction }) {
   const isReceive = transaction.type === 'RECEIVED';
   const isDeliver = transaction.type === 'DELIVERED';
 
-  // Projected stock balance after reversal
   let projectedStock = product ? product.stock : 0;
   let canReverse = true;
   let warningMessage = '';
@@ -55,7 +54,7 @@ export default function ReversalModal({ isOpen, onClose, transaction }) {
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span className="badge badge-reversed">
-              <RotateCcw size={13} />
+              <RotateCcw size={13} strokeWidth={2.4} />
               Controlled Reversal
             </span>
           </div>
@@ -65,35 +64,35 @@ export default function ReversalModal({ isOpen, onClose, transaction }) {
         </div>
 
         <div style={{ marginBottom: '16px' }}>
-          <h3 className="font-heading" style={{ fontSize: '1.15rem', marginBottom: '4px' }}>
-            Reverse Transaction: #{transaction.id}
+          <h3 className="font-heading" style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '4px' }}>
+            Reverse Entry #{transaction.id}
           </h3>
           <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-            The original entry remains permanently archived in the audit trail. An offsetting reversal transaction will be logged and stock will be restored.
+            The original entry remains permanently visible in the audit trail. An offsetting reversal transaction will be logged and stock will be restored.
           </p>
         </div>
 
         {/* Transaction Summary Card */}
-        <div style={{ background: '#0a0f1d', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginBottom: '16px', fontSize: '0.85rem' }}>
+        <div style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-color)', borderRadius: '14px', padding: '14px', marginBottom: '16px', fontSize: '0.86rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Product:</span>
-            <strong>{transaction.productName}</strong>
+            <strong style={{ color: 'var(--text-main)' }}>{transaction.productName}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Original Type:</span>
-            <span style={{ color: isReceive ? '#34d399' : '#38bdf8', fontWeight: 600 }}>
+            <span style={{ color: isReceive ? 'var(--receive-green)' : 'var(--deliver-blue)', fontWeight: 700 }}>
               {isReceive ? 'Stock Received' : 'Stock Delivered'}
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
             <span style={{ color: 'var(--text-muted)' }}>Quantity:</span>
-            <strong>{transaction.quantity} {transaction.unit}</strong>
+            <strong style={{ color: 'var(--text-main)' }}>{transaction.quantity} {transaction.unit}</strong>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px dashed var(--border-color)' }}>
             <span style={{ color: 'var(--text-muted)' }}>Stock Balance Impact:</span>
             <span>
               {product ? product.stock : 0} {product?.unit} &rarr;{' '}
-              <strong style={{ color: projectedStock < 0 ? '#ef4444' : '#f59e0b' }}>
+              <strong style={{ color: projectedStock < 0 ? 'var(--accent-rose)' : 'var(--accent-amber)' }}>
                 {projectedStock} {product?.unit}
               </strong>
             </span>
@@ -101,14 +100,14 @@ export default function ReversalModal({ isOpen, onClose, transaction }) {
         </div>
 
         {warningMessage && (
-          <div style={{ display: 'flex', gap: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.82rem' }}>
+          <div style={{ display: 'flex', gap: '8px', background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '12px', borderRadius: '10px', marginBottom: '16px', fontSize: '0.82rem' }}>
             <AlertTriangle size={18} style={{ flexShrink: 0 }} />
             <div>{warningMessage}</div>
           </div>
         )}
 
         {error && (
-          <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '10px 12px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.82rem' }}>
+          <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '10px 12px', borderRadius: '10px', marginBottom: '14px', fontSize: '0.82rem' }}>
             {error}
           </div>
         )}
@@ -140,8 +139,8 @@ export default function ReversalModal({ isOpen, onClose, transaction }) {
             </button>
             <button
               type="submit"
-              className="btn btn-danger"
-              style={{ flex: 2 }}
+              className="btn"
+              style={{ flex: 2, background: 'var(--accent-rose)', color: '#ffffff' }}
               disabled={!canReverse}
             >
               <RotateCcw size={16} />
