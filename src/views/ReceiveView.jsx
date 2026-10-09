@@ -8,9 +8,7 @@ import {
   ChevronUp, 
   Search, 
   X, 
-  RotateCcw,
-  Layers,
-  Sparkles
+  RotateCcw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';

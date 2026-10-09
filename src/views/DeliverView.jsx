@@ -7,8 +7,7 @@ import {
   ChevronUp, 
   Search, 
   X, 
-  RotateCcw,
-  ShieldAlert
+  RotateCcw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -193,11 +192,6 @@ export default function DeliverView() {
       setError(res.error || 'Failed to record stock delivery.');
     }
   };
-
-  let fullPartyLabel = recipient.trim();
-  if (destination.trim()) {
-    fullPartyLabel = fullPartyLabel ? `${fullPartyLabel} (${destination.trim()})` : destination.trim();
-  }
 
   return (
     <div style={{ animation: 'fadeIn 0.25s ease-out' }}>

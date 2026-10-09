@@ -5,7 +5,6 @@ import {
   ArrowUpFromLine, 
   Check, 
   AlertCircle,
-  HelpCircle,
   Building2,
   User,
   FileText

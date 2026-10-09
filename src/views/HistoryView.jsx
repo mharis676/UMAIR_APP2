@@ -8,12 +8,10 @@ import {
   User, 
   FileText, 
   Building2, 
-  Download,
   Edit3,
   X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { storage } from '../storage';
 import ReversalModal from '../components/ReversalModal';
 import EditTransactionModal from '../components/EditTransactionModal';
 import WhatsAppShareButton, { WhatsAppIcon } from '../components/WhatsAppShareButton';
