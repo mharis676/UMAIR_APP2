@@ -300,8 +300,18 @@ export default function HistoryView() {
                     {/* Party & Reference */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '4px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                       {tx.party && (
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                          <Building2 size={13} /> {tx.party}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600, color: 'var(--text-main)' }}>
+                          {isReceive ? (
+                            <>
+                              <Building2 size={13} color="var(--receive-green)" />
+                              <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>From:</span> {tx.party}
+                            </>
+                          ) : (
+                            <>
+                              <User size={13} color="var(--deliver-blue)" />
+                              <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>Deliver to:</span> {tx.party}
+                            </>
+                          )}
                         </span>
                       )}
                       {tx.refNumber && (
@@ -350,10 +360,12 @@ export default function HistoryView() {
                         {tx.notes}
                       </div>
                     )}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-dim)' }}>
-                      <User size={12} />
-                      <span>Recorded by: <strong>{tx.operator || 'Storekeeper'}</strong></span>
-                      <span>• #{tx.id}</span>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'var(--text-dim)', marginTop: '2px' }}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        {isReceive ? <Building2 size={12} color="var(--receive-green)" /> : <User size={12} color="var(--deliver-blue)" />}
+                        <span>{isReceive ? 'Received from: ' : 'Deliver to: '}<strong>{tx.party || 'General'}</strong></span>
+                      </span>
+                      <span>#{tx.id}</span>
                     </div>
 
                     {isReversedOriginal && tx.reversalReason && (

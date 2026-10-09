@@ -7,6 +7,7 @@ import {
   AlertCircle,
   HelpCircle,
   Building2,
+  User,
   FileText
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
