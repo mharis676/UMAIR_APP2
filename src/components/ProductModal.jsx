@@ -128,7 +128,7 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
                 {editingProduct.stock} <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>{editingProduct.unit}</span>
               </div>
             </div>
-            <WhatsAppProductStockButton product={editingProduct} operator={operator} variant="button" />
+            <WhatsAppProductStockButton product={editingProduct} variant="button" />
           </div>
         )}
 

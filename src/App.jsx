@@ -4,7 +4,6 @@ import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Toast from './components/Toast';
 import ProductModal from './components/ProductModal';
-import UserModal from './components/UserModal';
 import BackupModal from './components/BackupModal';
 
 import DashboardView from './views/DashboardView';
@@ -17,7 +16,6 @@ function MainApp() {
   const { currentTab } = useApp();
 
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
-  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
   const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
 
   return (
@@ -25,7 +23,6 @@ function MainApp() {
       {/* Top Header Navbar */}
       <Navbar
         onOpenAddProduct={() => setIsAddProductOpen(true)}
-        onOpenUserModal={() => setIsUserModalOpen(true)}
         onOpenBackupModal={() => setIsBackupModalOpen(true)}
       />
 
@@ -52,11 +49,6 @@ function MainApp() {
       <ProductModal
         isOpen={isAddProductOpen}
         onClose={() => setIsAddProductOpen(false)}
-      />
-
-      <UserModal
-        isOpen={isUserModalOpen}
-        onClose={() => setIsUserModalOpen(false)}
       />
 
       <BackupModal

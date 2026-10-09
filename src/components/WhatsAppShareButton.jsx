@@ -68,7 +68,6 @@ export default function WhatsAppShareButton({
  */
 export function WhatsAppProductStockButton({
   product,
-  operator,
   style = {},
   variant = "icon" // "icon" | "button"
 }) {
@@ -81,7 +80,7 @@ export function WhatsAppProductStockButton({
         className="icon-btn"
         onClick={(e) => {
           e.stopPropagation();
-          shareProductStockToWhatsApp(product, operator);
+          shareProductStockToWhatsApp(product);
         }}
         style={{
           width: '36px',
@@ -105,7 +104,7 @@ export function WhatsAppProductStockButton({
       className="btn"
       onClick={(e) => {
         e.stopPropagation();
-        shareProductStockToWhatsApp(product, operator);
+        shareProductStockToWhatsApp(product);
       }}
       style={{
         background: '#25D366',
@@ -136,7 +135,6 @@ export function WhatsAppProductStockButton({
 export function WhatsAppReportButton({
   products = [],
   categoryName = 'All Items',
-  operator,
   label = "Share Stock on WhatsApp",
   style = {}
 }) {
@@ -146,7 +144,7 @@ export function WhatsAppReportButton({
       className="btn"
       onClick={(e) => {
         e.stopPropagation();
-        shareInventoryReportToWhatsApp(products, { categoryName, operator });
+        shareInventoryReportToWhatsApp(products, { categoryName });
       }}
       style={{
         background: '#25D366',

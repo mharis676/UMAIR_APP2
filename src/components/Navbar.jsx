@@ -2,17 +2,8 @@ import React from 'react';
 import { User, Plus, Database, Sun, Moon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
-export default function Navbar({ onOpenAddProduct, onOpenUserModal, onOpenBackupModal }) {
-  const { operator, theme, toggleTheme } = useApp();
-
-  const getInitials = (name) => {
-    return (name || 'U')
-      .split(' ')
-      .slice(0, 2)
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase();
-  };
+export default function Navbar({ onOpenAddProduct, onOpenBackupModal }) {
+  const { theme, toggleTheme } = useApp();
 
   return (
     <header className="app-header">
@@ -25,44 +16,6 @@ export default function Navbar({ onOpenAddProduct, onOpenUserModal, onOpenBackup
       </div>
 
       <div className="header-actions">
-        {/* Theme Toggle (Light / Dark) */}
-        <button
-          className="icon-btn"
-          onClick={toggleTheme}
-          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
-          aria-label="Toggle Theme"
-        >
-          {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
-        </button>
-
-        {/* Active Operator Switcher */}
-        <button
-          className="operator-badge"
-          onClick={onOpenUserModal}
-          title="Switch operator"
-          aria-label="Active Operator"
-        >
-          <div
-            style={{
-              width: '20px',
-              height: '20px',
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #4f46e5, #06b6d4)',
-              color: '#ffffff',
-              fontSize: '0.65rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700
-            }}
-          >
-            {getInitials(operator)}
-          </div>
-          <span style={{ maxWidth: '85px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {operator.split(' ')[0]}
-          </span>
-        </button>
-
         {/* Quick Add Product */}
         <button
           className="icon-btn"
@@ -72,6 +25,16 @@ export default function Navbar({ onOpenAddProduct, onOpenUserModal, onOpenBackup
           style={{ background: 'var(--primary-light)', color: 'var(--primary)', borderColor: 'transparent' }}
         >
           <Plus size={18} strokeWidth={2.5} />
+        </button>
+
+        {/* Theme Toggle (Light / Dark) */}
+        <button
+          className="icon-btn"
+          onClick={toggleTheme}
+          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+          aria-label="Toggle Theme"
+        >
+          {theme === 'light' ? <Moon size={17} /> : <Sun size={17} />}
         </button>
 
         {/* Backup & Reports */}

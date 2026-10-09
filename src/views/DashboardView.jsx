@@ -113,7 +113,7 @@ export default function DashboardView({ onOpenAddProduct }) {
         {/* 1-Tap Share Stock Report via WhatsApp */}
         <button
           type="button"
-          onClick={() => shareInventoryReportToWhatsApp(products, { operator })}
+          onClick={() => shareInventoryReportToWhatsApp(products)}
           style={{
             marginTop: '14px',
             width: '100%',

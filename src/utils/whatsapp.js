@@ -61,10 +61,6 @@ export function generateWhatsAppMessage(tx) {
     lines.push(`• Ref / Slip #: *${tx.refNumber}*`);
   }
 
-  if (tx.operator) {
-    lines.push(`• Recorded By: *${tx.operator}*`);
-  }
-
   lines.push(`• Date & Time: ${dateFormatted}`);
 
   if (tx.notes) {
@@ -102,7 +98,6 @@ export function generateProductStockMessage(product, operator) {
       ? `• In-Stock Quantity: *0 ${product.unit || 'units'} (OUT OF STOCK)*`
       : `• In-Stock Quantity: *${product.stock} ${product.unit || 'units'}*`,
     '----------------------------------------',
-    operator ? `• Reported By: *${operator}*` : null,
     `• As of: ${dateFormatted}`,
     '----------------------------------------',
     '_StockTrack Mobile App_'
@@ -111,15 +106,15 @@ export function generateProductStockMessage(product, operator) {
   return lines.join('\n');
 }
 
-export function shareProductStockToWhatsApp(product, operator) {
-  const text = generateProductStockMessage(product, operator);
+export function shareProductStockToWhatsApp(product) {
+  const text = generateProductStockMessage(product);
   openWhatsAppUrl(text);
 }
 
 /**
  * Format complete current inventory stock report for WhatsApp
  */
-export function generateInventoryReportMessage(products = [], { categoryName = 'All Items', operator } = {}) {
+export function generateInventoryReportMessage(products = [], { categoryName = 'All Items' } = {}) {
   const dateFormatted = formatSlipDate();
   const totalUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
   const scopeLabel = categoryName && categoryName !== 'ALL' && categoryName !== 'All Items'
@@ -132,7 +127,6 @@ export function generateInventoryReportMessage(products = [], { categoryName = '
     `• Scope: ${scopeLabel}`,
     `• Total Products: ${products.length} items`,
     `• Total Units on Hand: *${totalUnits.toLocaleString()}* units`,
-    operator ? `• Reported By: *${operator}*` : null,
     `• Date & Time: ${dateFormatted}`,
     '----------------------------------------',
     '',

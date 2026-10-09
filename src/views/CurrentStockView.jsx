@@ -71,7 +71,6 @@ export default function CurrentStockView({ onOpenAddProduct }) {
           <WhatsAppReportButton
             products={filteredProducts}
             categoryName={selectedCategory}
-            operator={operator}
             label="Share Stock"
             style={{ padding: '8px 12px', fontSize: '0.78rem', borderRadius: '10px' }}
           />
@@ -315,7 +314,6 @@ export default function CurrentStockView({ onOpenAddProduct }) {
 
                   <WhatsAppProductStockButton
                     product={p}
-                    operator={operator}
                   />
 
                   <button
