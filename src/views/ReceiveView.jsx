@@ -5,11 +5,13 @@ import {
   CheckCircle2, 
   ArrowRight,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Edit3
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ProductModal from '../components/ProductModal';
+import EditTransactionModal from '../components/EditTransactionModal';
 import ProductSearchBar from '../components/ProductSearchBar';
 import WhatsAppShareButton from '../components/WhatsAppShareButton';
 
@@ -22,6 +24,8 @@ export default function ReceiveView() {
     operator,
     setCurrentTab
   } = useApp();
+
+  const [isEditOpen, setIsEditOpen] = useState(false);
 
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState('10');
@@ -181,6 +185,15 @@ export default function ReceiveView() {
                 View in History <ArrowRight size={14} />
               </button>
             </div>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', color: 'var(--text-muted)' }}
+              onClick={() => setIsEditOpen(true)}
+            >
+              <Edit3 size={13} /> Made a mistake? Edit this entry
+            </button>
           </div>
         </div>
       )}
@@ -410,6 +423,16 @@ export default function ReceiveView() {
         onCreatedCallback={(newProd) => {
           setSelectedProductId(newProd.id);
         }}
+      />
+
+      {/* Re-Edit Transaction Modal */}
+      <EditTransactionModal
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setLastSuccessResult(null);
+        }}
+        transaction={lastSuccessResult?.transaction}
       />
     </div>
   );

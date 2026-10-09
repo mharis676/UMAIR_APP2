@@ -317,6 +317,75 @@ export function AppProvider({ children }) {
     return { success: true };
   }, [products, transactions, operator, showToast]);
 
+  // Re-edit receiving or delivery transaction (corrects human mistakes & adjusts stock)
+  const updateTransaction = useCallback(({ transactionId, quantity, party, refNumber, notes, reason }) => {
+    const origTx = transactions.find((t) => t.id === transactionId);
+    if (!origTx) return { success: false, error: 'Transaction not found.' };
+    if (origTx.reversed) return { success: false, error: 'Reversed transactions cannot be modified.' };
+
+    const newQty = parseInt(quantity, 10);
+    if (isNaN(newQty) || newQty <= 0) {
+      return { success: false, error: 'Quantity must be a positive number greater than zero.' };
+    }
+
+    const prod = products.find((p) => p.id === origTx.productId);
+    if (!prod) return { success: false, error: 'Product associated with this transaction no longer exists.' };
+
+    const oldQty = origTx.quantity;
+    const qtyDiff = newQty - oldQty;
+
+    let newProductStock = prod.stock;
+
+    if (origTx.type === 'RECEIVED') {
+      newProductStock = prod.stock + qtyDiff;
+      if (newProductStock < 0) {
+        return {
+          success: false,
+          error: `Cannot reduce received quantity to ${newQty}. Current available stock is only ${prod.stock} ${prod.unit} (items may have already been delivered).`
+        };
+      }
+    } else if (origTx.type === 'DELIVERED') {
+      newProductStock = prod.stock - qtyDiff;
+      if (newProductStock < 0) {
+        return {
+          success: false,
+          error: `Cannot increase delivery quantity to ${newQty}. Total available stock is ${prod.stock + oldQty} ${prod.unit}.`
+        };
+      }
+    } else {
+      return { success: false, error: 'Reversal records cannot be edited directly.' };
+    }
+
+    const now = new Date().toISOString();
+    const recalculatedNewBalance = origTx.prevBalance + (origTx.type === 'RECEIVED' ? newQty : -newQty);
+
+    const updatedTx = {
+      ...origTx,
+      quantity: newQty,
+      newBalance: recalculatedNewBalance,
+      party: (party ?? origTx.party ?? '').trim(),
+      refNumber: (refNumber ?? origTx.refNumber ?? '').trim(),
+      notes: (notes ?? origTx.notes ?? '').trim(),
+      edited: true,
+      lastEditedAt: now,
+      lastEditedBy: operator,
+      editReason: (reason || '').trim() || 'Corrected quantity mistake'
+    };
+
+    const updatedTransactions = transactions.map((t) => (t.id === origTx.id ? updatedTx : t));
+    const updatedProducts = products.map((p) =>
+      p.id === prod.id ? { ...p, stock: newProductStock, updatedAt: now } : p
+    );
+
+    storage.setProducts(updatedProducts);
+    storage.setTransactions(updatedTransactions);
+    setProducts(updatedProducts);
+    setTransactions(updatedTransactions);
+
+    showToast(`Entry updated! Stock adjusted by ${qtyDiff >= 0 ? '+' : ''}${origTx.type === 'RECEIVED' ? qtyDiff : -qtyDiff} ${prod.unit}.`);
+    return { success: true, transaction: updatedTx };
+  }, [products, transactions, operator, showToast]);
+
   const resetAllData = useCallback(() => {
     const data = storage.resetDemoData();
     setProducts(data.products);
@@ -363,6 +432,7 @@ export function AppProvider({ children }) {
         receiveStock,
         deliverStock,
         reverseTransaction,
+        updateTransaction,
         resetAllData,
         importDataFromJSON,
         preselectedProductId,

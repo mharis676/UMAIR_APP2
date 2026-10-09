@@ -9,11 +9,13 @@ import {
   FileText, 
   Building2, 
   Download,
+  Edit3,
   X
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { storage } from '../storage';
 import ReversalModal from '../components/ReversalModal';
+import EditTransactionModal from '../components/EditTransactionModal';
 import WhatsAppShareButton, { WhatsAppIcon } from '../components/WhatsAppShareButton';
 import { shareToWhatsApp } from '../utils/whatsapp';
 
@@ -26,6 +28,8 @@ export default function HistoryView() {
   
   const [selectedTxForReversal, setSelectedTxForReversal] = useState(null);
   const [isReversalOpen, setIsReversalOpen] = useState(false);
+  const [selectedTxForEdit, setSelectedTxForEdit] = useState(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [expandedTxId, setExpandedTxId] = useState(null);
 
   const filteredTransactions = useMemo(() => {
@@ -70,6 +74,12 @@ export default function HistoryView() {
     e.stopPropagation();
     setSelectedTxForReversal(tx);
     setIsReversalOpen(true);
+  };
+
+  const handleOpenEdit = (tx, e) => {
+    e.stopPropagation();
+    setSelectedTxForEdit(tx);
+    setIsEditOpen(true);
   };
 
   return (
@@ -226,6 +236,12 @@ export default function HistoryView() {
                         REVERSED
                       </span>
                     )}
+
+                    {tx.edited && (
+                      <span className="badge badge-code" style={{ fontSize: '0.65rem' }}>
+                        EDITED
+                      </span>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -352,14 +368,33 @@ export default function HistoryView() {
                       />
 
                       {!isReversedOriginal && !isReversal && (
-                        <button
-                          type="button"
-                          className="btn btn-secondary"
-                          style={{ fontSize: '0.74rem', padding: '6px 12px', color: 'var(--accent-rose)', borderColor: 'rgba(225, 29, 72, 0.3)' }}
-                          onClick={(e) => handleOpenReversal(tx, e)}
-                        >
-                          <RotateCcw size={13} /> Correct / Reverse Entry
-                        </button>
+                        <>
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ 
+                              fontSize: '0.74rem', 
+                              padding: '6px 12px', 
+                              color: 'var(--primary)', 
+                              borderColor: 'var(--primary)',
+                              background: 'var(--primary-light)'
+                            }}
+                            onClick={(e) => handleOpenEdit(tx, e)}
+                            title="Correct quantity, party or reference mistake"
+                          >
+                            <Edit3 size={13} /> Edit Entry
+                          </button>
+
+                          <button
+                            type="button"
+                            className="btn btn-secondary"
+                            style={{ fontSize: '0.74rem', padding: '6px 12px', color: 'var(--accent-rose)', borderColor: 'rgba(225, 29, 72, 0.3)' }}
+                            onClick={(e) => handleOpenReversal(tx, e)}
+                            title="Void or completely reverse this transaction"
+                          >
+                            <RotateCcw size={13} /> Void / Reverse
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
@@ -369,6 +404,16 @@ export default function HistoryView() {
           })}
         </div>
       )}
+
+      {/* Re-Edit Transaction Modal (For human entry mistakes) */}
+      <EditTransactionModal
+        isOpen={isEditOpen}
+        onClose={() => {
+          setIsEditOpen(false);
+          setSelectedTxForEdit(null);
+        }}
+        transaction={selectedTxForEdit}
+      />
 
       {/* Controlled Reversal Modal */}
       <ReversalModal
