@@ -8,7 +8,8 @@ import {
   ChevronUp, 
   Search, 
   X, 
-  RotateCcw
+  RotateCcw,
+  Building2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -124,6 +125,10 @@ export default function ReceiveView() {
 
   const handleOpenReview = (e) => {
     e.preventDefault();
+    if (!supplier.trim()) {
+      setError('Please specify who this stock is received from (Supplier / Source).');
+      return;
+    }
     if (selectedItems.length === 0) {
       setError('Please add receiving quantity for at least one product using the [+] buttons.');
       return;
@@ -133,6 +138,10 @@ export default function ReceiveView() {
   };
 
   const handleConfirmSubmit = () => {
+    if (!supplier.trim()) {
+      setError('Received from (Supplier / Source) is required.');
+      return;
+    }
     const timestamp = new Date().toISOString();
     const payload = selectedItems.map((it) => ({
       productId: it.product.id,
@@ -574,7 +583,51 @@ export default function ReceiveView() {
         )}
       </div>
 
-      {/* Collapsible Optional Details (Supplier, Ref #, Notes) */}
+      {/* Required Received From Field */}
+      <div style={{
+        background: 'var(--bg-card)',
+        border: '1.5px solid var(--border-color)',
+        borderRadius: '14px',
+        padding: '14px 16px',
+        marginBottom: '14px'
+      }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label" style={{ marginBottom: '6px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--text-main)', fontSize: '0.88rem' }}>
+              <Building2 size={16} color="var(--receive-green)" />
+              Received from (Supplier / Source)
+            </span>
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              color: '#dc2626',
+              background: '#fee2e2',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              letterSpacing: '0.02em'
+            }}>
+              * Required
+            </span>
+          </label>
+          <input
+            type="text"
+            className="input"
+            placeholder="e.g. Ferrero Logistics, Dior Distribution, Depot..."
+            value={supplier}
+            onChange={(e) => {
+              setSupplier(e.target.value);
+              if (error) setError('');
+            }}
+            required
+            style={{
+              borderColor: (!supplier.trim() && error) ? 'var(--danger)' : undefined,
+              fontSize: '0.92rem'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Collapsible Optional Details (Ref #, Notes) */}
       <div style={{ marginBottom: '18px' }}>
         <button
           type="button"
@@ -594,26 +647,12 @@ export default function ReceiveView() {
             cursor: 'pointer'
           }}
         >
-          <span>{showOptionalFields ? 'Hide' : '+ Add'} Received from, Ref # & Notes (Optional)</span>
+          <span>{showOptionalFields ? 'Hide' : '+ Add'} Reference # & Notes (Optional)</span>
           {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
         {showOptionalFields && (
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
-            <div className="form-group">
-              <label className="form-label">
-                <span>Received from (Supplier / Source)</span>
-                <span className="optional">Optional</span>
-              </label>
-              <input
-                type="text"
-                className="input"
-                placeholder="e.g. Ferrero Logistics, Dior Distribution..."
-                value={supplier}
-                onChange={(e) => setSupplier(e.target.value)}
-              />
-            </div>
-
             <div className="form-group">
               <label className="form-label">
                 <span>Reference / Delivery Order #</span>

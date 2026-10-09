@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowDownToLine, ArrowUpFromLine, Check, ArrowLeft, Calendar, FileText, Building2, User, Package } from 'lucide-react';
 
 export default function ConfirmDialog({
@@ -17,9 +17,20 @@ export default function ConfirmDialog({
   notes,
   timestamp
 }) {
+  const [partyError, setPartyError] = useState('');
+
   if (!isOpen) return null;
 
   const isReceive = type === 'RECEIVE';
+
+  const handleConfirmClick = () => {
+    if (!party || !party.trim()) {
+      setPartyError(isReceive ? 'Please enter Received from (Supplier).' : 'Please enter Deliver to (Recipient).');
+      return;
+    }
+    setPartyError('');
+    onConfirm();
+  };
 
   // Normalize single product vs multiple items
   const displayItems = items && items.length > 0 
@@ -136,41 +147,50 @@ export default function ConfirmDialog({
 
         {/* Details list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px', fontSize: '0.84rem' }}>
-          {/* Received from / Deliver to */}
+          {/* Received from / Deliver to (REQUIRED) */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
             {isReceive ? (
-              <Building2 size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+              <Building2 size={15} color="var(--receive-green)" style={{ flexShrink: 0 }} />
             ) : (
-              <User size={15} color="var(--text-muted)" style={{ flexShrink: 0 }} />
+              <User size={15} color="var(--deliver-blue)" style={{ flexShrink: 0 }} />
             )}
-            <span style={{ color: 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: 600 }}>
-              {isReceive ? 'Received from:' : 'Deliver to:'}
+            <span style={{ color: 'var(--text-main)', whiteSpace: 'nowrap', fontWeight: 700 }}>
+              {isReceive ? 'Received from *:' : 'Deliver to *:'}
             </span>
             {onPartyChange ? (
               <input
                 type="text"
-                placeholder={isReceive ? 'Supplier name (Optional)' : 'Recipient name (Optional)'}
+                placeholder={isReceive ? 'Supplier name (Required)' : 'Recipient name (Required)'}
                 value={party || ''}
-                onChange={(e) => onPartyChange(e.target.value)}
+                onChange={(e) => {
+                  onPartyChange(e.target.value);
+                  if (partyError) setPartyError('');
+                }}
                 style={{
                   marginLeft: 'auto',
                   width: '56%',
                   maxWidth: '220px',
                   background: 'var(--bg-surface)',
-                  border: '1.5px solid var(--border-color)',
+                  border: partyError || (!party || !party.trim()) ? '1.5px solid var(--danger)' : '1.5px solid var(--border-color)',
                   borderRadius: '8px',
                   padding: '5px 8px',
                   fontSize: '0.82rem',
                   color: 'var(--text-main)',
-                  textAlign: 'right'
+                  textAlign: 'right',
+                  fontWeight: 600
                 }}
               />
             ) : (
-              <strong style={{ marginLeft: 'auto', textAlign: 'right' }}>
-                {party || 'Not specified'}
+              <strong style={{ marginLeft: 'auto', textAlign: 'right', color: party ? 'var(--text-main)' : 'var(--danger)' }}>
+                {party || 'Required'}
               </strong>
             )}
           </div>
+          {partyError && (
+            <div style={{ color: 'var(--danger)', fontSize: '0.74rem', fontWeight: 700, textAlign: 'right', marginTop: '-4px' }}>
+              {partyError}
+            </div>
+          )}
 
           {refNumber && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-main)' }}>
@@ -207,7 +227,7 @@ export default function ConfirmDialog({
             type="button"
             className={`btn ${isReceive ? 'btn-success' : 'btn-deliver'}`}
             style={{ flex: 2, padding: '13px' }}
-            onClick={onConfirm}
+            onClick={handleConfirmClick}
           >
             <Check size={18} strokeWidth={2.5} />
             {isReceive 

@@ -7,7 +7,8 @@ import {
   ChevronUp, 
   Search, 
   X, 
-  RotateCcw
+  RotateCcw,
+  User
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -140,6 +141,10 @@ export default function DeliverView() {
 
   const handleOpenReview = (e) => {
     e.preventDefault();
+    if (!recipient.trim()) {
+      setError('Please specify who this stock is delivered to (Recipient / Customer).');
+      return;
+    }
     if (selectedItems.length === 0) {
       setError('Please add delivery quantity for at least one in-stock product using [+] buttons.');
       return;
@@ -149,11 +154,17 @@ export default function DeliverView() {
   };
 
   const handleConfirmSubmit = () => {
-    const timestamp = new Date().toISOString();
     let fullParty = recipient.trim();
     if (destination.trim()) {
       fullParty = fullParty ? `${fullParty} (${destination.trim()})` : destination.trim();
     }
+
+    if (!fullParty) {
+      setError('Deliver to (Recipient / Customer) is required.');
+      return;
+    }
+
+    const timestamp = new Date().toISOString();
 
     const payload = selectedItems.map((it) => ({
       productId: it.product.id,
@@ -592,7 +603,51 @@ export default function DeliverView() {
         )}
       </div>
 
-      {/* Collapsible Optional Details (Recipient, Destination, DO #, Notes) */}
+      {/* Required Deliver To Field */}
+      <div style={{
+        background: 'var(--bg-card)',
+        border: '1.5px solid var(--border-color)',
+        borderRadius: '14px',
+        padding: '14px 16px',
+        marginBottom: '14px'
+      }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label" style={{ marginBottom: '6px' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: 'var(--text-main)', fontSize: '0.88rem' }}>
+              <User size={16} color="var(--deliver-blue)" />
+              Deliver to (Recipient / Customer)
+            </span>
+            <span style={{
+              fontSize: '0.72rem',
+              fontWeight: 800,
+              color: '#dc2626',
+              background: '#fee2e2',
+              padding: '2px 7px',
+              borderRadius: '6px',
+              letterSpacing: '0.02em'
+            }}>
+              * Required
+            </span>
+          </label>
+          <input
+            type="text"
+            className="input"
+            placeholder="e.g. Downtown Boutique, Client John, Branch 2..."
+            value={recipient}
+            onChange={(e) => {
+              setRecipient(e.target.value);
+              if (error) setError('');
+            }}
+            required
+            style={{
+              borderColor: (!recipient.trim() && error) ? 'var(--danger)' : undefined,
+              fontSize: '0.92rem'
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Collapsible Optional Details (Destination, DO #, Notes) */}
       <div style={{ marginBottom: '18px' }}>
         <button
           type="button"
@@ -612,26 +667,12 @@ export default function DeliverView() {
             cursor: 'pointer'
           }}
         >
-          <span>{showOptionalFields ? 'Hide' : '+ Add'} Delivered to, Location & Notes (Optional)</span>
+          <span>{showOptionalFields ? 'Hide' : '+ Add'} Destination, DO # & Notes (Optional)</span>
           {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
         {showOptionalFields && (
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
-            <div className="form-group">
-              <label className="form-label">
-                <span>Delivered to (Recipient / Customer)</span>
-                <span className="optional">Optional</span>
-              </label>
-              <input
-                type="text"
-                className="input"
-                placeholder="e.g. Downtown Boutique, Client John"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-              />
-            </div>
-
             <div className="form-group">
               <label className="form-label">
                 <span>Destination / Location</span>

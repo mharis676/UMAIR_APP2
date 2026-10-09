@@ -138,6 +138,9 @@ export function AppProvider({ children }) {
   }, [products, showToast]);
 
   const receiveStockBatch = useCallback(({ items, party, refNumber, notes, customTimestamp }) => {
+    if (!party || !party.trim()) {
+      return { success: false, error: 'Received from (Supplier / Source) is required.' };
+    }
     if (!items || !items.length) {
       return { success: false, error: 'No items selected to receive.' };
     }
@@ -239,6 +242,9 @@ export function AppProvider({ children }) {
   }, [receiveStockBatch]);
 
   const deliverStockBatch = useCallback(({ items, party, refNumber, notes, customTimestamp }) => {
+    if (!party || !party.trim()) {
+      return { success: false, error: 'Deliver to (Recipient / Customer) is required.' };
+    }
     if (!items || !items.length) {
       return { success: false, error: 'No items selected to deliver.' };
     }
@@ -440,6 +446,10 @@ export function AppProvider({ children }) {
     const newQty = parseInt(quantity, 10);
     if (isNaN(newQty) || newQty <= 0) {
       return { success: false, error: 'Quantity must be a positive number greater than zero.' };
+    }
+
+    if (!party || !party.trim()) {
+      return { success: false, error: 'Received from / Deliver to is required.' };
     }
 
     const prod = products.find((p) => p.id === origTx.productId);

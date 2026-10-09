@@ -75,6 +75,11 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
       return;
     }
 
+    if (!party || !party.trim()) {
+      setError(isReceive ? 'Received from (Supplier / Source) is required.' : 'Deliver to (Recipient / Customer) is required.');
+      return;
+    }
+
     const res = updateTransaction({
       transactionId: transaction.id,
       quantity: numQuantity,
@@ -238,21 +243,37 @@ export default function EditTransactionModal({ isOpen, onClose, transaction }) {
             </div>
           </div>
 
-          {/* Party (Received from / Deliver to) */}
+          {/* Party (Received from / Deliver to - REQUIRED) */}
           <div className="form-group">
             <label className="form-label">
-              <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 700 }}>
                 {isReceive ? <Building2 size={13} color="var(--receive-green)" /> : <User size={13} color="var(--deliver-blue)" />}
-                {isReceive ? 'Received from (Supplier)' : 'Deliver to (Recipient)'}
+                {isReceive ? 'Received from (Supplier / Source)' : 'Deliver to (Recipient / Customer)'}
               </span>
-              <span className="optional">Optional</span>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                color: '#dc2626',
+                background: '#fee2e2',
+                padding: '2px 7px',
+                borderRadius: '6px'
+              }}>
+                * Required
+              </span>
             </label>
             <input
               type="text"
               className="input"
-              placeholder={isReceive ? "Supplier / Vendor name..." : "Recipient, client or store..."}
+              placeholder={isReceive ? "Supplier / Vendor name (Required)..." : "Recipient, client or store (Required)..."}
               value={party}
-              onChange={(e) => setParty(e.target.value)}
+              onChange={(e) => {
+                setParty(e.target.value);
+                if (error) setError('');
+              }}
+              required
+              style={{
+                borderColor: (!party.trim() && error) ? 'var(--danger)' : undefined
+              }}
             />
           </div>
 
