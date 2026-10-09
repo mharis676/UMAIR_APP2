@@ -596,7 +596,7 @@ export default function ReceiveView() {
             cursor: 'pointer'
           }}
         >
-          <span>{showOptionalFields ? 'Hide' : '+ Add'} Supplier, Ref # & Notes (Optional)</span>
+          <span>{showOptionalFields ? 'Hide' : '+ Add'} Received from, Ref # & Notes (Optional)</span>
           {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
@@ -604,7 +604,7 @@ export default function ReceiveView() {
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
             <div className="form-group">
               <label className="form-label">
-                <span>Supplier / Source</span>
+                <span>Received from (Supplier / Source)</span>
                 <span className="optional">Optional</span>
               </label>
               <input
@@ -669,6 +669,7 @@ export default function ReceiveView() {
         type="RECEIVE"
         items={selectedItems}
         party={supplier}
+        onPartyChange={setSupplier}
         refNumber={refNumber}
         notes={notes}
         operator={operator}

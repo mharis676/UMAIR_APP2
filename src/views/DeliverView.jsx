@@ -618,7 +618,7 @@ export default function DeliverView() {
             cursor: 'pointer'
           }}
         >
-          <span>{showOptionalFields ? 'Hide' : '+ Add'} Recipient, Location & Notes (Optional)</span>
+          <span>{showOptionalFields ? 'Hide' : '+ Add'} Delivered to, Location & Notes (Optional)</span>
           {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
         </button>
 
@@ -626,7 +626,7 @@ export default function DeliverView() {
           <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
             <div className="form-group">
               <label className="form-label">
-                <span>Recipient / Customer</span>
+                <span>Delivered to (Recipient / Customer)</span>
                 <span className="optional">Optional</span>
               </label>
               <input
@@ -704,7 +704,8 @@ export default function DeliverView() {
         onConfirm={handleConfirmSubmit}
         type="DELIVER"
         items={selectedItems}
-        party={fullPartyLabel}
+        party={recipient}
+        onPartyChange={setRecipient}
         refNumber={refNumber}
         notes={notes}
         operator={operator}
