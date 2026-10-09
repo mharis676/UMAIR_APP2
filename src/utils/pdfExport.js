@@ -38,7 +38,7 @@ export function exportHistoryPDF(transactions = []) {
   doc.line(40, 72, doc.internal.pageSize.getWidth() - 40, 72);
 
   // Format table data
-  const tableData = transactions.map((t, idx) => {
+  const tableData = transactions.length > 0 ? transactions.map((t, idx) => {
     const isReceive = t.type === 'RECEIVED';
     const isDeliver = t.type === 'DELIVERED';
     const typeLabel = isReceive ? 'RECEIVED' : isDeliver ? 'DELIVERED' : (t.type || 'TX');
@@ -64,7 +64,7 @@ export function exportHistoryPDF(transactions = []) {
       `${t.prevBalance ?? 0} -> ${t.newBalance ?? 0}`,
       partyRef || '-'
     ];
-  });
+  }) : [['-', '-', 'No transactions recorded yet', '-', '-', '-', '-']];
 
   autoTable(doc, {
     startY: 85,
@@ -147,7 +147,7 @@ export function exportInventoryPDF(products = []) {
   doc.setLineWidth(1);
   doc.line(40, 72, doc.internal.pageSize.getWidth() - 40, 72);
 
-  const tableData = products.map((p, idx) => {
+  const tableData = products.length > 0 ? products.map((p, idx) => {
     const isOut = (p.stock || 0) <= 0;
     return [
       idx + 1,
@@ -157,7 +157,7 @@ export function exportInventoryPDF(products = []) {
       `${p.stock || 0} ${p.unit || 'units'}`,
       isOut ? 'OUT OF STOCK' : 'IN STOCK'
     ];
-  });
+  }) : [['-', 'No products registered yet', '-', '-', '-', '-']];
 
   autoTable(doc, {
     startY: 85,

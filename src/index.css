@@ -138,7 +138,7 @@ body {
 /* Scroll area accounting for fixed top header and fixed bottom navigation */
 .main-content {
   flex: 1;
-  padding: 16px 16px 90px 16px;
+  padding: 16px 16px max(100px, calc(env(safe-area-inset-bottom, 0px) + 88px)) 16px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }

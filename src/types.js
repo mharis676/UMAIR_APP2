@@ -34,8 +34,7 @@ export function getCategoryInfo(categoryName) {
   if ((categoryName || '').toLowerCase().includes('perf')) return CATEGORIES_META[1];
   if ((categoryName || '').toLowerCase().includes('cosm')) return CATEGORIES_META[2];
   if ((categoryName || '').toLowerCase().includes('groc')) return CATEGORIES_META[3];
-  if ((categoryName || '').toLowerCase().includes('elec')) return CATEGORIES_META[4];
-  return { name: categoryName || 'Other', emoji: '📦', color: '#64748b', bg: '#f1f5f9' };
+  return { name: categoryName || 'Other', color: '#64748b', bg: '#f1f5f9' };
 }
 
 export const INITIAL_PRODUCTS = [
