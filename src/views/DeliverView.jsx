@@ -1,19 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ArrowUpFromLine, 
   CheckCircle2, 
-  ArrowRight,
-  ShieldAlert,
-  ChevronDown,
-  ChevronUp,
-  Trash2,
-  Layers,
+  ArrowRight, 
+  ChevronDown, 
+  ChevronUp, 
+  Search, 
+  X, 
   RotateCcw,
-  Plus
+  ShieldAlert
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
-import ProductSearchBar from '../components/ProductSearchBar';
 import { WhatsAppBatchShareButton } from '../components/WhatsAppShareButton';
 
 export default function DeliverView() {
@@ -21,19 +19,17 @@ export default function DeliverView() {
     products, 
     deliverStockBatch, 
     preselectedProductId, 
-    setPreselectedProductId,
-    operator,
-    setCurrentTab
+    setPreselectedProductId, 
+    operator, 
+    setCurrentTab 
   } = useApp();
 
-  // Selected product in search bar
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [quantity, setQuantity] = useState('1');
+  // Quantities mapped by productId: { [productId]: number }
+  const [quantities, setQuantities] = useState({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [viewFilter, setViewFilter] = useState('ALL'); // 'ALL' | 'SELECTED'
 
-  // Multi-product batch list: array of { product, quantity, prevBalance, newBalance }
-  const [batchItems, setBatchItems] = useState([]);
-
-  // Optional dispatch details
+  // Optional delivery details
   const [recipient, setRecipient] = useState('');
   const [destination, setDestination] = useState('');
   const [refNumber, setRefNumber] = useState('');
@@ -45,195 +41,128 @@ export default function DeliverView() {
   const [lastSuccessResult, setLastSuccessResult] = useState(null);
   const [error, setError] = useState('');
 
-  // Handle preselected product from other tabs
+  // Handle preselected product from other views
   useEffect(() => {
     if (preselectedProductId) {
-      setSelectedProductId(preselectedProductId);
-      setPreselectedProductId(null);
-    } else if (!selectedProductId && products.length > 0 && batchItems.length === 0) {
-      const available = products.find((p) => p.stock > 0) || products[0];
-      setSelectedProductId(available ? available.id : '');
-    }
-  }, [preselectedProductId, products]);
-
-  const selectedProduct = products.find((p) => p.id === selectedProductId) || null;
-  const currentStock = selectedProduct ? selectedProduct.stock : 0;
-  const numQuantity = parseInt(quantity, 10) || 0;
-
-  // How many of this product are already in the batch list?
-  const alreadyInBatch = batchItems.find((it) => it.product.id === selectedProductId);
-  const alreadyAddedQty = alreadyInBatch ? alreadyInBatch.quantity : 0;
-  const remainingAvailableForSelection = Math.max(0, currentStock - alreadyAddedQty);
-
-  const isOverDelivery = selectedProduct && numQuantity > remainingAvailableForSelection;
-  const calculatedRemainingBalance = currentStock - (alreadyAddedQty + numQuantity);
-
-  // Stepper adjustments for the search selection
-  const handleAdjustQuantity = (delta) => {
-    const current = parseInt(quantity, 10) || 0;
-    const maxAllowed = remainingAvailableForSelection > 0 ? remainingAvailableForSelection : 1;
-    const next = Math.max(1, Math.min(maxAllowed, current + delta));
-    setQuantity(String(next));
-    setError('');
-  };
-
-  const handleSetMax = () => {
-    if (remainingAvailableForSelection > 0) {
-      setQuantity(String(remainingAvailableForSelection));
-    }
-    setError('');
-  };
-
-  // Add selected product to the batch dispatch list
-  const handleAddProductToBatch = () => {
-    if (!selectedProduct) {
-      setError('Please search and select a product to deliver.');
-      return;
-    }
-    if (currentStock === 0) {
-      setError(`"${selectedProduct.name}" has 0 stock in hand. Receive stock first.`);
-      return;
-    }
-    if (numQuantity <= 0) {
-      setError('Quantity to deliver must be at least 1.');
-      return;
-    }
-    if (numQuantity > remainingAvailableForSelection) {
-      setError(`Cannot deliver ${numQuantity} ${selectedProduct.unit}. Only ${remainingAvailableForSelection} remaining available.`);
-      return;
-    }
-
-    setBatchItems((prev) => {
-      const existingIndex = prev.findIndex((item) => item.product.id === selectedProduct.id);
-      if (existingIndex >= 0) {
-        // Increment quantity of existing item
-        const updated = [...prev];
-        const existing = updated[existingIndex];
-        const newQty = existing.quantity + numQuantity;
-        updated[existingIndex] = {
-          ...existing,
-          quantity: newQty,
-          prevBalance: selectedProduct.stock,
-          newBalance: selectedProduct.stock - newQty
-        };
-        return updated;
-      } else {
-        // Add new item to batch list
-        return [
+      const prod = products.find((p) => p.id === preselectedProductId);
+      if (prod && prod.stock > 0) {
+        setQuantities((prev) => ({
           ...prev,
-          {
-            product: selectedProduct,
-            quantity: numQuantity,
-            prevBalance: selectedProduct.stock,
-            newBalance: selectedProduct.stock - numQuantity
-          }
-        ];
+          [preselectedProductId]: 1
+        }));
       }
-    });
-
-    setError('');
-    // Clear selection so user can pick the next product easily
-    setSelectedProductId('');
-    setQuantity('1');
-  };
-
-  // Inline adjustment inside batch items list
-  const handleUpdateBatchItemQty = (productId, delta) => {
-    setBatchItems((prev) =>
-      prev
-        .map((it) => {
-          if (it.product.id === productId) {
-            const nextQty = it.quantity + delta;
-            if (nextQty <= 0) return null; // Remove if zero
-            if (nextQty > it.product.stock) {
-              setError(`Maximum available stock for "${it.product.name}" is ${it.product.stock} ${it.product.unit}.`);
-              return it;
-            }
-            return {
-              ...it,
-              quantity: nextQty,
-              newBalance: it.product.stock - nextQty
-            };
-          }
-          return it;
-        })
-        .filter(Boolean)
-    );
-  };
-
-  // Remove specific item from batch
-  const handleRemoveBatchItem = (productId) => {
-    setBatchItems((prev) => prev.filter((it) => it.product.id !== productId));
-  };
-
-  // Clear all batch items
-  const handleClearBatch = () => {
-    setBatchItems([]);
-    setError('');
-  };
-
-  // Total batch units
-  const totalBatchUnits = batchItems.reduce((acc, it) => acc + it.quantity, 0);
-
-  // Compute items that will be submitted
-  const getSubmissionItems = () => {
-    let itemsToSubmit = [...batchItems];
-    // If user has a valid product selected in form but didn't click "Add to List", include it automatically
-    if (selectedProduct && numQuantity > 0 && !isOverDelivery) {
-      const existsIndex = itemsToSubmit.findIndex((it) => it.product.id === selectedProduct.id);
-      if (existsIndex >= 0) {
-        // Already in list
-      } else {
-        itemsToSubmit.push({
-          product: selectedProduct,
-          quantity: numQuantity,
-          prevBalance: selectedProduct.stock,
-          newBalance: selectedProduct.stock - numQuantity
-        });
-      }
+      setPreselectedProductId(null);
     }
-    return itemsToSubmit;
+  }, [preselectedProductId, products, setPreselectedProductId]);
+
+  // Adjust quantity for a specific product (bounded by product.stock)
+  const handleAdjustQty = (productId, delta) => {
+    const prod = products.find((p) => p.id === productId);
+    if (!prod || prod.stock <= 0) return;
+
+    setQuantities((prev) => {
+      const current = prev[productId] || 0;
+      const next = Math.max(0, Math.min(prod.stock, current + delta));
+      if (next === 0) {
+        const copy = { ...prev };
+        delete copy[productId];
+        return copy;
+      }
+      return { ...prev, [productId]: next };
+    });
+    setError('');
   };
 
-  // Open confirmation modal
+  // Direct number input change with stock clamping
+  const handleSetQty = (productId, rawVal) => {
+    const prod = products.find((p) => p.id === productId);
+    if (!prod || prod.stock <= 0) return;
+
+    const val = parseInt(rawVal, 10);
+    setQuantities((prev) => {
+      if (isNaN(val) || val <= 0) {
+        const copy = { ...prev };
+        delete copy[productId];
+        return copy;
+      }
+      const clamped = Math.min(prod.stock, val);
+      return { ...prev, [productId]: clamped };
+    });
+    setError('');
+  };
+
+  // Set all available stock for a product
+  const handleSetMax = (productId) => {
+    const prod = products.find((p) => p.id === productId);
+    if (!prod || prod.stock <= 0) return;
+    setQuantities((prev) => ({ ...prev, [productId]: prod.stock }));
+    setError('');
+  };
+
+  // Clear all entered quantities
+  const handleClearAll = () => {
+    setQuantities({});
+    setError('');
+  };
+
+  // Active items for submission
+  const selectedItems = useMemo(() => {
+    return Object.entries(quantities)
+      .map(([id, qty]) => {
+        const prod = products.find((p) => p.id === id);
+        if (!prod || qty <= 0) return null;
+        return {
+          product: prod,
+          productId: prod.id,
+          quantity: qty,
+          prevBalance: prod.stock,
+          newBalance: prod.stock - qty
+        };
+      })
+      .filter(Boolean);
+  }, [quantities, products]);
+
+  const totalSelectedUnits = selectedItems.reduce((acc, it) => acc + it.quantity, 0);
+
+  // Filtered products list
+  const filteredProducts = useMemo(() => {
+    return products.filter((p) => {
+      const matchSearch =
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.code && p.code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (p.category && p.category.toLowerCase().includes(searchTerm.toLowerCase()));
+
+      if (viewFilter === 'SELECTED') {
+        return matchSearch && (quantities[p.id] || 0) > 0;
+      }
+      return matchSearch;
+    });
+  }, [products, searchTerm, viewFilter, quantities]);
+
   const handleOpenReview = (e) => {
     e.preventDefault();
-    const itemsToSubmit = getSubmissionItems();
-
-    if (itemsToSubmit.length === 0) {
-      setError('Please add at least one product with available stock to deliver.');
+    if (selectedItems.length === 0) {
+      setError('Please add delivery quantity for at least one in-stock product using [+] buttons.');
       return;
     }
-
-    // Verify none exceed stock
-    for (const it of itemsToSubmit) {
-      if (it.quantity > it.product.stock) {
-        setError(`Insufficient stock for "${it.product.name}". Available: ${it.product.stock}, Entered: ${it.quantity}.`);
-        return;
-      }
-    }
-
     setError('');
     setIsConfirmOpen(true);
   };
 
-  // Submit the batch delivery transaction
   const handleConfirmSubmit = () => {
-    const itemsToSubmit = getSubmissionItems();
     const timestamp = new Date().toISOString();
-
     let fullParty = recipient.trim();
     if (destination.trim()) {
       fullParty = fullParty ? `${fullParty} (${destination.trim()})` : destination.trim();
     }
 
-    const formattedPayload = itemsToSubmit.map((it) => ({
+    const payload = selectedItems.map((it) => ({
       productId: it.product.id,
       quantity: it.quantity
     }));
 
     const res = deliverStockBatch({
-      items: formattedPayload,
+      items: payload,
       party: fullParty,
       refNumber,
       notes,
@@ -252,21 +181,18 @@ export default function DeliverView() {
         notes,
         timestamp
       });
-      // Reset form and batch cart
-      setBatchItems([]);
-      setSelectedProductId('');
-      setQuantity('1');
+      // Reset state
+      setQuantities({});
       setRecipient('');
       setDestination('');
       setRefNumber('');
       setNotes('');
       setShowOptionalFields(false);
+      setViewFilter('ALL');
     } else {
       setError(res.error || 'Failed to record stock delivery.');
     }
   };
-
-  const pendingSubmissionItems = getSubmissionItems();
 
   let fullPartyLabel = recipient.trim();
   if (destination.trim()) {
@@ -276,7 +202,7 @@ export default function DeliverView() {
   return (
     <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
       {/* Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
         <div
           style={{
             width: '42px',
@@ -293,25 +219,19 @@ export default function DeliverView() {
         >
           <ArrowUpFromLine size={22} strokeWidth={2.4} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.15 }} className="font-heading">
             Deliver Stock
           </h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Deliver single or multiple products at one time
+            Set dispatch quantities for multiple products directly
           </p>
         </div>
-
-        {batchItems.length > 0 && (
-          <span className="badge badge-delivered" style={{ fontSize: '0.78rem', padding: '5px 10px' }}>
-            <Layers size={13} /> {batchItems.length} queued
-          </span>
-        )}
       </div>
 
-      {/* Success Card (Supports Batch) */}
+      {/* Success Card */}
       {lastSuccessResult && (
-        <div className="success-card" style={{ background: 'var(--deliver-blue-light)', borderColor: 'var(--deliver-blue-border)', marginBottom: '20px' }}>
+        <div className="success-card" style={{ background: 'var(--deliver-blue-light)', borderColor: 'var(--deliver-blue-border)', marginBottom: '18px' }}>
           <div className="success-icon-wrap" style={{ background: 'var(--deliver-blue)', boxShadow: '0 4px 15px rgba(2, 132, 199, 0.35)' }}>
             <CheckCircle2 size={32} />
           </div>
@@ -319,17 +239,16 @@ export default function DeliverView() {
             Stock Delivered Successfully!
           </h3>
           <p style={{ fontSize: '0.88rem', color: '#0369a1', marginBottom: '14px' }}>
-            Dispatched <strong>{lastSuccessResult.items.length} {lastSuccessResult.items.length === 1 ? 'product' : 'products'}</strong> ({lastSuccessResult.totalUnits} total units)
+            Dispatched <strong>{lastSuccessResult.items.length} {lastSuccessResult.items.length === 1 ? 'product' : 'products'}</strong> (-{lastSuccessResult.totalUnits} units total)
           </p>
 
-          {/* Itemized delivered breakdown */}
           <div style={{
             background: '#ffffff',
             borderRadius: '12px',
             padding: '10px 12px',
             marginBottom: '16px',
             border: '1px solid #bae6fd',
-            maxHeight: '180px',
+            maxHeight: '160px',
             overflowY: 'auto',
             display: 'flex',
             flexDirection: 'column',
@@ -355,7 +274,7 @@ export default function DeliverView() {
                     Bal: {it.prevBalance} ➔ <strong style={{ color: '#0284c7' }}>{it.newBalance}</strong> {it.unit}
                   </div>
                 </div>
-                <div style={{ fontWeight: 800, color: '#0284c7', fontSize: '0.95rem', flexShrink: 0 }}>
+                <div style={{ fontWeight: 800, color: '#0284c7', fontSize: '0.95rem' }}>
                   -{it.quantity} {it.unit}
                 </div>
               </div>
@@ -397,410 +316,394 @@ export default function DeliverView() {
       )}
 
       {error && (
-        <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '12px 14px', borderRadius: '12px', marginBottom: '16px', fontSize: '0.86rem', fontWeight: 500 }}>
+        <div style={{ background: 'var(--accent-rose-light)', border: '1px solid rgba(225, 29, 72, 0.3)', color: 'var(--accent-rose)', padding: '12px 14px', borderRadius: '12px', marginBottom: '14px', fontSize: '0.86rem', fontWeight: 500 }}>
           {error}
         </div>
       )}
 
-      {/* ACTIVE BATCH ITEMS LIST (CART) */}
-      {batchItems.length > 0 && (
-        <div style={{
-          background: 'var(--bg-card)',
-          border: '1.5px solid var(--deliver-blue)',
-          borderRadius: '16px',
-          padding: '14px',
-          marginBottom: '18px',
-          boxShadow: '0 4px 12px rgba(2, 132, 199, 0.08)'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Layers size={16} color="var(--deliver-blue)" />
-              <strong style={{ fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                Dispatch List ({batchItems.length} {batchItems.length === 1 ? 'item' : 'items'})
-              </strong>
-            </div>
-            <button
-              type="button"
-              onClick={handleClearBatch}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--accent-rose)',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '2px 6px'
-              }}
-            >
-              <RotateCcw size={12} /> Clear List
-            </button>
+      {/* STICKY LIVE DISPATCH COUNTER */}
+      <div style={{
+        background: selectedItems.length > 0 ? 'var(--deliver-blue-light)' : 'var(--bg-card)',
+        border: `1.5px solid ${selectedItems.length > 0 ? 'var(--deliver-blue)' : 'var(--border-color)'}`,
+        borderRadius: '14px',
+        padding: '12px 14px',
+        marginBottom: '14px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        transition: 'all 0.2s ease',
+        boxShadow: selectedItems.length > 0 ? '0 4px 14px rgba(2, 132, 199, 0.12)' : 'none'
+      }}>
+        <div>
+          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+            {selectedItems.length > 0 ? 'Dispatch Queued' : 'Ready to Deliver'}
           </div>
-
-          {/* Scrollable list of items queued in dispatch */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '2px' }}>
-            {batchItems.map((it) => (
-              <div
-                key={it.product.id}
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
-                  padding: '10px 12px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: '8px'
-                }}
-              >
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {it.product.name}
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                    Bal: {it.product.stock} ➔ <strong style={{ color: 'var(--deliver-blue)' }}>{it.product.stock - it.quantity}</strong> {it.product.unit}
-                  </div>
-                </div>
-
-                {/* Inline mini stepper for this item */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateBatchItemQty(it.product.id, -1)}
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '6px',
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    -
-                  </button>
-                  <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 800, fontSize: '0.92rem', color: 'var(--deliver-blue)' }}>
-                    -{it.quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleUpdateBatchItemQty(it.product.id, 1)}
-                    disabled={it.quantity >= it.product.stock}
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '6px',
-                      background: 'var(--bg-card)',
-                      border: '1px solid var(--border-color)',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      opacity: it.quantity >= it.product.stock ? 0.4 : 1
-                    }}
-                  >
-                    +
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBatchItem(it.product.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--text-dim)',
-                      padding: '4px',
-                      cursor: 'pointer',
-                      marginLeft: '2px'
-                    }}
-                    title="Remove product from dispatch"
-                  >
-                    <Trash2 size={15} color="var(--accent-rose)" />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Batch Units Totals Banner */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginTop: '10px',
-            paddingTop: '8px',
-            borderTop: '1px dashed var(--border-color)',
-            fontSize: '0.84rem'
-          }}>
-            <span style={{ color: 'var(--text-muted)' }}>Total Units Queued:</span>
-            <strong style={{ fontSize: '1.05rem', color: 'var(--deliver-blue)', fontWeight: 800 }}>
-              -{totalBatchUnits.toLocaleString()} units
-            </strong>
+          <div style={{ fontSize: '1rem', fontWeight: 800, color: selectedItems.length > 0 ? 'var(--deliver-blue)' : 'var(--text-main)', fontFamily: 'var(--font-heading)' }}>
+            {selectedItems.length} {selectedItems.length === 1 ? 'Product' : 'Products'} • -{totalSelectedUnits.toLocaleString()} units
           </div>
         </div>
-      )}
 
-      {/* FORM: SELECT PRODUCT & QUANTITY */}
-      <form onSubmit={handleOpenReview}>
-        <div className="form-group">
-          <label className="form-label" style={{ marginBottom: '8px' }}>
-            {batchItems.length > 0 ? '+ Add Another Product to Deliver' : '1. Search Product to Deliver'}
-          </label>
-
-          <ProductSearchBar
-            products={products}
-            selectedProduct={selectedProduct}
-            onSelectProduct={(p) => {
-              setSelectedProductId(p ? p.id : '');
-              setError('');
-            }}
-            placeholder="Type product name to deliver..."
-            showStockStatus={true}
-          />
-        </div>
-
-        {/* Quantity Stepper for current selection */}
-        {selectedProduct && (
-          <div className="form-group" style={{ marginTop: '14px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <label className="form-label" style={{ margin: 0 }}>
-                Quantity to Deliver ({selectedProduct.unit})
-              </label>
-              <span style={{ fontSize: '0.78rem', color: remainingAvailableForSelection > 0 ? 'var(--deliver-blue)' : 'var(--accent-rose)', fontWeight: 600 }}>
-                Available: {remainingAvailableForSelection} {selectedProduct.unit}
-              </span>
-            </div>
-
-            <div className="stepper-container">
-              <button
-                type="button"
-                className="stepper-btn"
-                onClick={() => handleAdjustQuantity(-1)}
-                disabled={numQuantity <= 1 || remainingAvailableForSelection === 0}
-                aria-label="Decrease quantity"
-              >
-                -
-              </button>
-              <input
-                type="number"
-                min="1"
-                max={remainingAvailableForSelection}
-                className="stepper-input"
-                value={quantity}
-                onChange={(e) => {
-                  setQuantity(e.target.value);
-                  setError('');
-                }}
-                disabled={remainingAvailableForSelection === 0}
-                required
-              />
-              <button
-                type="button"
-                className="stepper-btn"
-                onClick={() => handleAdjustQuantity(1)}
-                disabled={numQuantity >= remainingAvailableForSelection || remainingAvailableForSelection === 0}
-                aria-label="Increase quantity"
-              >
-                +
-              </button>
-            </div>
-
-            {/* Quick Presets */}
-            <div className="quick-chip-row">
-              <button type="button" className="quick-chip" onClick={() => handleAdjustQuantity(1)} disabled={remainingAvailableForSelection === 0}>+1</button>
-              <button type="button" className="quick-chip" onClick={() => handleAdjustQuantity(5)} disabled={remainingAvailableForSelection < 5}>+5</button>
-              <button type="button" className="quick-chip" onClick={() => handleAdjustQuantity(10)} disabled={remainingAvailableForSelection < 10}>+10</button>
-              <button type="button" className="quick-chip" onClick={handleSetMax} disabled={remainingAvailableForSelection === 0}>
-                All Available ({remainingAvailableForSelection})
-              </button>
-            </div>
-
-            {/* Over-delivery Alert */}
-            {isOverDelivery && (
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  background: 'var(--accent-rose-light)',
-                  border: '1px solid rgba(225, 29, 72, 0.4)',
-                  color: 'var(--accent-rose)',
-                  padding: '12px 14px',
-                  borderRadius: '12px',
-                  marginTop: '12px',
-                  fontSize: '0.86rem'
-                }}
-              >
-                <ShieldAlert size={22} style={{ flexShrink: 0 }} />
-                <div>
-                  <strong>Exceeds available stock!</strong>
-                  <div style={{ fontSize: '0.78rem', marginTop: '2px' }}>
-                    You entered {numQuantity} {selectedProduct.unit}, but only {remainingAvailableForSelection} are available.
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Visual single calculation */}
-            {numQuantity > 0 && !isOverDelivery && remainingAvailableForSelection > 0 && (
-              <div className="calculation-card" style={{ marginTop: '12px' }}>
-                <div className="calc-row">
-                  <span style={{ color: 'var(--text-muted)' }}>Current Stock:</span>
-                  <span style={{ fontWeight: 600 }}>{currentStock} {selectedProduct.unit}</span>
-                </div>
-                <div className="calc-row">
-                  <span style={{ color: 'var(--deliver-blue)', fontWeight: 600 }}>- Dispatched:</span>
-                  <span style={{ color: 'var(--deliver-blue)', fontWeight: 700 }}>-{alreadyAddedQty + numQuantity} {selectedProduct.unit}</span>
-                </div>
-                <div className="calc-row final">
-                  <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Remaining Balance:</span>
-                  <span className="calc-final-num blue">
-                    {calculatedRemainingBalance} {selectedProduct.unit}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* "+ Add to Dispatch List" Button */}
-            {remainingAvailableForSelection > 0 && !isOverDelivery && (
-              <button
-                type="button"
-                className="btn btn-secondary"
-                onClick={handleAddProductToBatch}
-                style={{
-                  width: '100%',
-                  marginTop: '10px',
-                  padding: '12px',
-                  fontWeight: 700,
-                  color: 'var(--deliver-blue)',
-                  borderColor: 'var(--deliver-blue)',
-                  background: 'var(--deliver-blue-light)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px'
-                }}
-              >
-                <Plus size={18} strokeWidth={2.5} />
-                Add "{selectedProduct.name}" to Dispatch List
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Collapsible Optional Details (Recipient, Destination, Ref #, Notes) */}
-        <div style={{ margin: '18px 0' }}>
+        {selectedItems.length > 0 && (
           <button
             type="button"
-            onClick={() => setShowOptionalFields(!showOptionalFields)}
+            onClick={handleClearAll}
             style={{
-              width: '100%',
+              background: 'none',
+              border: 'none',
+              color: 'var(--accent-rose)',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              background: 'var(--bg-surface)',
-              border: '1px solid var(--border-color)',
-              borderRadius: '12px',
-              padding: '10px 14px',
-              color: 'var(--text-muted)',
-              fontSize: '0.84rem',
-              fontWeight: 600,
-              cursor: 'pointer'
+              gap: '4px',
+              padding: '4px 8px'
             }}
           >
-            <span>{showOptionalFields ? 'Hide' : '+ Add'} Recipient, Location & Notes (Optional)</span>
-            {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            <RotateCcw size={13} /> Reset
           </button>
+        )}
+      </div>
 
-          {showOptionalFields && (
-            <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
-              <div className="form-group">
-                <label className="form-label">
-                  <span>Recipient / Customer</span>
-                  <span className="optional">Optional</span>
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g. Downtown Boutique, Client John"
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <span>Destination / Location</span>
-                  <span className="optional">Optional</span>
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g. Branch Outlet #2, Main Warehouse"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  <span>Dispatch / DO Number</span>
-                  <span className="optional">Optional</span>
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g. DO-9021, DISP-104"
-                  value={refNumber}
-                  onChange={(e) => setRefNumber(e.target.value)}
-                />
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">
-                  <span>Notes / Remarks</span>
-                  <span className="optional">Optional</span>
-                </label>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g. Handed over to driver"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
-            </div>
+      {/* Search Input Bar & Quick View Filter Tabs */}
+      <div style={{ marginBottom: '12px' }}>
+        <div style={{ position: 'relative', marginBottom: '8px' }}>
+          <Search
+            size={16}
+            color="var(--text-dim)"
+            style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)' }}
+          />
+          <input
+            type="text"
+            className="input"
+            placeholder="Search products to deliver..."
+            style={{ paddingLeft: '40px', paddingRight: searchTerm ? '38px' : '14px', fontSize: '0.88rem', borderRadius: '12px' }}
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              type="button"
+              onClick={() => setSearchTerm('')}
+              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-dim)', cursor: 'pointer' }}
+            >
+              <X size={16} />
+            </button>
           )}
         </div>
 
-        {/* Master Review Button */}
-        <button
-          type="submit"
-          className="btn btn-deliver btn-block"
-          style={{ padding: '16px' }}
-          disabled={pendingSubmissionItems.length === 0}
-        >
-          <ArrowUpFromLine size={20} strokeWidth={2.4} />
-          {pendingSubmissionItems.length > 1
-            ? `Review & Deliver Dispatch (${pendingSubmissionItems.length} Products)`
-            : (pendingSubmissionItems.length === 1
-                ? `Review & Deliver (${pendingSubmissionItems[0].product.name})`
-                : 'Review & Deliver Stock')}
-        </button>
-      </form>
+        {/* View mode toggle */}
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setViewFilter('ALL')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '999px',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: viewFilter === 'ALL' ? 'var(--primary)' : 'var(--bg-card)',
+              border: viewFilter === 'ALL' ? '1px solid var(--primary)' : '1px solid var(--border-color)',
+              color: viewFilter === 'ALL' ? '#ffffff' : 'var(--text-muted)'
+            }}
+          >
+            All Products ({products.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewFilter('SELECTED')}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '999px',
+              fontSize: '0.74rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              background: viewFilter === 'SELECTED' ? 'var(--deliver-blue)' : 'var(--bg-card)',
+              border: viewFilter === 'SELECTED' ? '1px solid var(--deliver-blue)' : '1px solid var(--border-color)',
+              color: viewFilter === 'SELECTED' ? '#ffffff' : 'var(--text-muted)'
+            }}
+          >
+            Selected Only ({selectedItems.length})
+          </button>
+        </div>
+      </div>
 
-      {/* Confirmation Dialog (Supports Single or Multi-Product Items) */}
+      {/* PRODUCTS VISUAL STEPPERS LIST */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '18px' }}>
+        {filteredProducts.map((p) => {
+          const qty = quantities[p.id] || 0;
+          const isSelected = qty > 0;
+          const remainingBal = p.stock - qty;
+          const isOutOfStock = (p.stock || 0) <= 0;
+
+          return (
+            <div
+              key={p.id}
+              className="card"
+              style={{
+                borderRadius: '16px',
+                padding: '14px',
+                border: isSelected 
+                  ? '2px solid var(--deliver-blue)' 
+                  : '1px solid var(--border-color)',
+                background: isSelected 
+                  ? 'rgba(2, 132, 199, 0.03)' 
+                  : (isOutOfStock ? 'rgba(0, 0, 0, 0.02)' : 'var(--bg-card)'),
+                boxShadow: isSelected ? '0 4px 16px rgba(2, 132, 199, 0.1)' : 'var(--shadow-sm)',
+                opacity: isOutOfStock ? 0.6 : 1,
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {/* Product Info Row */}
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '10px', gap: '8px' }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '0.96rem', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.25 }}>
+                    {p.name}
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', marginTop: '3px', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                    {p.code && <span className="badge badge-code" style={{ fontSize: '0.68rem', padding: '1px 6px' }}>{p.code}</span>}
+                    <span>Available: <strong>{p.stock}</strong> {p.unit}</span>
+                  </div>
+                </div>
+
+                {/* Status or remaining balance */}
+                {isOutOfStock ? (
+                  <span className="badge badge-reversed" style={{ fontSize: '0.68rem' }}>
+                    OUT OF STOCK
+                  </span>
+                ) : isSelected ? (
+                  <span className="badge badge-delivered" style={{ fontSize: '0.74rem', padding: '3px 8px', flexShrink: 0 }}>
+                    Remaining: {remainingBal} {p.unit}
+                  </span>
+                ) : null}
+              </div>
+
+              {/* Stepper & Quick Chips */}
+              {!isOutOfStock && (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                  {/* Stepper */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-surface)', padding: '3px', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQty(p.id, -1)}
+                      disabled={qty <= 0}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border-color)',
+                        fontWeight: 700,
+                        fontSize: '1rem',
+                        cursor: qty <= 0 ? 'not-allowed' : 'pointer',
+                        opacity: qty <= 0 ? 0.4 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      -
+                    </button>
+
+                    <input
+                      type="number"
+                      min="0"
+                      max={p.stock}
+                      value={qty || ''}
+                      placeholder="0"
+                      onChange={(e) => handleSetQty(p.id, e.target.value)}
+                      style={{
+                        width: '56px',
+                        height: '32px',
+                        textAlign: 'center',
+                        fontWeight: 800,
+                        fontSize: '1rem',
+                        color: isSelected ? 'var(--deliver-blue)' : 'var(--text-main)',
+                        border: 'none',
+                        background: 'transparent',
+                        outline: 'none',
+                        fontFamily: 'var(--font-heading)'
+                      }}
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQty(p.id, 1)}
+                      disabled={qty >= p.stock}
+                      style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        background: isSelected ? 'var(--deliver-blue)' : 'var(--bg-card)',
+                        color: isSelected ? '#ffffff' : 'var(--text-main)',
+                        border: isSelected ? 'none' : '1px solid var(--border-color)',
+                        fontWeight: 700,
+                        fontSize: '1rem',
+                        cursor: qty >= p.stock ? 'not-allowed' : 'pointer',
+                        opacity: qty >= p.stock ? 0.4 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Quick Preset Buttons */}
+                  <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQty(p.id, 1)}
+                      disabled={qty >= p.stock}
+                      style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 600, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+                    >
+                      +1
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQty(p.id, 5)}
+                      disabled={qty + 5 > p.stock}
+                      style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 600, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', cursor: 'pointer', opacity: qty + 5 > p.stock ? 0.5 : 1 }}
+                    >
+                      +5
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAdjustQty(p.id, 10)}
+                      disabled={qty + 10 > p.stock}
+                      style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 600, background: 'var(--bg-surface)', border: '1px solid var(--border-color)', cursor: 'pointer', opacity: qty + 10 > p.stock ? 0.5 : 1 }}
+                    >
+                      +10
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSetMax(p.id)}
+                      style={{ padding: '4px 8px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, background: 'rgba(2, 132, 199, 0.1)', color: 'var(--deliver-blue)', border: '1px solid rgba(2, 132, 199, 0.25)', cursor: 'pointer' }}
+                    >
+                      All ({p.stock})
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {filteredProducts.length === 0 && (
+          <div className="card" style={{ textAlign: 'center', padding: '30px 16px', color: 'var(--text-muted)' }}>
+            No products match the filter.
+          </div>
+        )}
+      </div>
+
+      {/* Collapsible Optional Details (Recipient, Destination, DO #, Notes) */}
+      <div style={{ marginBottom: '18px' }}>
+        <button
+          type="button"
+          onClick={() => setShowOptionalFields(!showOptionalFields)}
+          style={{
+            width: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--bg-surface)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '12px',
+            padding: '10px 14px',
+            color: 'var(--text-muted)',
+            fontSize: '0.84rem',
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          <span>{showOptionalFields ? 'Hide' : '+ Add'} Recipient, Location & Notes (Optional)</span>
+          {showOptionalFields ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {showOptionalFields && (
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '14px', marginTop: '8px', animation: 'fadeIn 0.2s ease-out' }}>
+            <div className="form-group">
+              <label className="form-label">
+                <span>Recipient / Customer</span>
+                <span className="optional">Optional</span>
+              </label>
+              <input
+                type="text"
+                className="input"
+                placeholder="e.g. Downtown Boutique, Client John"
+                value={recipient}
+                onChange={(e) => setRecipient(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                <span>Destination / Location</span>
+                <span className="optional">Optional</span>
+              </label>
+              <input
+                type="text"
+                className="input"
+                placeholder="e.g. Branch Outlet #2, Main Warehouse"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">
+                <span>Dispatch / DO Number</span>
+                <span className="optional">Optional</span>
+              </label>
+              <input
+                type="text"
+                className="input"
+                placeholder="e.g. DO-9021, DISP-104"
+                value={refNumber}
+                onChange={(e) => setRefNumber(e.target.value)}
+              />
+            </div>
+
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">
+                <span>Notes / Remarks</span>
+                <span className="optional">Optional</span>
+              </label>
+              <input
+                type="text"
+                className="input"
+                placeholder="e.g. Handed over to driver"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Review Button */}
+      <button
+        type="button"
+        onClick={handleOpenReview}
+        className="btn btn-deliver btn-block"
+        style={{ padding: '16px' }}
+        disabled={selectedItems.length === 0}
+      >
+        <ArrowUpFromLine size={20} strokeWidth={2.4} />
+        {selectedItems.length > 0
+          ? `Review & Deliver (${selectedItems.length} Products • -${totalSelectedUnits.toLocaleString()} Units)`
+          : 'Select Products Above to Deliver'}
+      </button>
+
+      {/* Confirmation Dialog */}
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmSubmit}
         type="DELIVER"
-        items={pendingSubmissionItems}
+        items={selectedItems}
         party={fullPartyLabel}
         refNumber={refNumber}
         notes={notes}
