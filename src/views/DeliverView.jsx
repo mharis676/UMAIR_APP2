@@ -2,19 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { 
   ArrowUpFromLine, 
   CheckCircle2, 
-  Building2, 
-  MapPin, 
-  FileText, 
   ArrowRight,
   ShieldAlert,
   ChevronDown,
-  ChevronUp,
-  Search,
-  Check
+  ChevronUp
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { getCategoryInfo } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
+import ProductSearchBar from '../components/ProductSearchBar';
 
 export default function DeliverView() {
   const { 
@@ -33,8 +28,6 @@ export default function DeliverView() {
   const [refNumber, setRefNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
-  const [productSearch, setProductSearch] = useState('');
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [lastSuccessResult, setLastSuccessResult] = useState(null);
@@ -45,18 +38,16 @@ export default function DeliverView() {
       setSelectedProductId(preselectedProductId);
       setPreselectedProductId(null);
     } else if (!selectedProductId && products.length > 0) {
-      // Pick first product that has stock > 0 if possible
       const available = products.find((p) => p.stock > 0) || products[0];
       setSelectedProductId(available.id);
     }
   }, [preselectedProductId, products]);
 
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const selectedProduct = products.find((p) => p.id === selectedProductId) || null;
   const currentStock = selectedProduct ? selectedProduct.stock : 0;
   const numQuantity = parseInt(quantity, 10) || 0;
   const isOverDelivery = selectedProduct && numQuantity > currentStock;
   const calculatedRemainingBalance = currentStock - numQuantity;
-  const categoryInfo = selectedProduct ? getCategoryInfo(selectedProduct.category) : null;
 
   const handleAdjustQuantity = (delta) => {
     const current = parseInt(quantity, 10) || 0;
@@ -73,7 +64,7 @@ export default function DeliverView() {
   const handleOpenReview = (e) => {
     e.preventDefault();
     if (!selectedProduct) {
-      setError('Please select a product first.');
+      setError('Please select or search for a product first.');
       return;
     }
     if (currentStock === 0) {
@@ -130,11 +121,6 @@ export default function DeliverView() {
     }
   };
 
-  const filteredPickerProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.code && p.code.toLowerCase().includes(productSearch.toLowerCase()))
-  );
-
   return (
     <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
       {/* Title */}
@@ -149,7 +135,8 @@ export default function DeliverView() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.2)'
+            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.2)',
+            flexShrink: 0
           }}
         >
           <ArrowUpFromLine size={22} strokeWidth={2.4} />
@@ -207,75 +194,27 @@ export default function DeliverView() {
       )}
 
       <form onSubmit={handleOpenReview}>
-        {/* Step 1: Product Selection Card */}
+        {/* Step 1: Searchable Product Text Bar */}
         <div className="form-group">
-          <label className="form-label">
-            1. Product to Deliver
+          <label className="form-label" style={{ marginBottom: '8px' }}>
+            1. Search Product to Deliver
           </label>
 
-          {selectedProduct ? (
-            <div
-              className="card"
-              onClick={() => setIsProductPickerOpen(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                cursor: 'pointer',
-                borderColor: currentStock === 0 ? 'var(--accent-rose)' : 'var(--border-focus)',
-                background: 'var(--bg-card)'
-              }}
-            >
-              <div
-                className="category-avatar"
-                style={{ background: categoryInfo?.bg || '#f1f5f9' }}
-              >
-                {categoryInfo?.emoji || '📦'}
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {selectedProduct.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                  <span className="badge badge-code">{selectedProduct.code || 'SKU'}</span>
-                  <span style={{ fontSize: '0.78rem', color: currentStock === 0 ? 'var(--accent-rose)' : 'var(--deliver-blue)', fontWeight: 700 }}>
-                    {currentStock === 0 ? 'Out of Stock (0)' : `${currentStock} ${selectedProduct.unit} available`}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-muted)',
-                  borderRadius: '8px',
-                  padding: '6px 10px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                Change
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-secondary btn-block"
-              onClick={() => setIsProductPickerOpen(true)}
-            >
-              Tap to choose product
-            </button>
-          )}
+          <ProductSearchBar
+            products={products}
+            selectedProduct={selectedProduct}
+            onSelectProduct={(p) => {
+              setSelectedProductId(p ? p.id : '');
+              setError('');
+            }}
+            placeholder="Type product name to deliver..."
+            showStockStatus={true}
+          />
         </div>
 
         {/* Step 2: Quantity Stepper */}
         {selectedProduct && (
-          <div className="form-group">
+          <div className="form-group" style={{ marginTop: '14px' }}>
             <label className="form-label">
               2. Quantity to Deliver ({selectedProduct.unit})
             </label>
@@ -285,6 +224,7 @@ export default function DeliverView() {
                 className="stepper-btn"
                 onClick={() => handleAdjustQuantity(-1)}
                 disabled={numQuantity <= 1 || currentStock === 0}
+                aria-label="Decrease quantity"
               >
                 -
               </button>
@@ -306,6 +246,7 @@ export default function DeliverView() {
                 className="stepper-btn"
                 onClick={() => handleAdjustQuantity(1)}
                 disabled={numQuantity >= currentStock || currentStock === 0}
+                aria-label="Increase quantity"
               >
                 +
               </button>
@@ -465,76 +406,6 @@ export default function DeliverView() {
           Review & Deliver Stock
         </button>
       </form>
-
-      {/* Product Picker Modal */}
-      {isProductPickerOpen && (
-        <div className="modal-overlay" onClick={() => setIsProductPickerOpen(false)}>
-          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title font-heading">Choose Product to Deliver</h3>
-            </div>
-
-            <div style={{ position: 'relative', marginBottom: '14px' }}>
-              <Search
-                size={16}
-                color="var(--text-dim)"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-              />
-              <input
-                type="text"
-                className="input"
-                placeholder="Search products..."
-                style={{ paddingLeft: '38px', fontSize: '0.88rem' }}
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '55vh', overflowY: 'auto' }}>
-              {filteredPickerProducts.map((p) => {
-                const cat = getCategoryInfo(p.category);
-                const isSelected = p.id === selectedProductId;
-                const isZero = p.stock === 0;
-
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      setSelectedProductId(p.id);
-                      setIsProductPickerOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: isSelected ? 'var(--deliver-blue-light)' : 'var(--bg-surface)',
-                      border: isSelected ? '1.5px solid var(--deliver-blue)' : '1px solid var(--border-color)',
-                      cursor: 'pointer',
-                      opacity: isZero ? 0.6 : 1
-                    }}
-                  >
-                    <div className="category-avatar" style={{ background: cat.bg, width: '38px', height: '38px', fontSize: '1.2rem' }}>
-                      {cat.emoji}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                        {p.name}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: isZero ? 'var(--accent-rose)' : 'var(--deliver-blue)', fontWeight: 600 }}>
-                        {isZero ? '0 in stock (empty)' : `${p.stock} ${p.unit} available`}
-                      </div>
-                    </div>
-                    {isSelected && <Check size={18} color="var(--deliver-blue)" />}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

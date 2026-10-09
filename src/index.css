@@ -559,30 +559,31 @@ h1, h2, h3, h4, .font-heading {
 
 /* Stepper Input Widget */
 .stepper-container {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 10px;
-  width: 100%;
-  box-sizing: border-box;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  margin-bottom: 10px !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .stepper-btn {
-  width: 50px;
-  min-width: 50px;
-  height: 52px;
-  flex-shrink: 0;
-  flex-grow: 0;
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  height: 50px !important;
+  flex: 0 0 48px !important;
   border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-color);
   background: var(--bg-surface);
   color: var(--text-main);
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
   cursor: pointer;
   transition: all 0.15s ease;
   user-select: none;
@@ -599,16 +600,16 @@ h1, h2, h3, h4, .font-heading {
 }
 
 .stepper-input {
-  flex: 1 1 0%;
-  min-width: 0;
-  width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
+  flex: 1 1 0% !important;
+  min-width: 0 !important;
+  width: 0 !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   text-align: center;
   font-family: var(--font-heading);
   font-size: 1.8rem;
   font-weight: 700;
-  height: 52px;
+  height: 50px;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-sm);
   background: var(--bg-card);

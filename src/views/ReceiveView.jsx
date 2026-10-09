@@ -3,19 +3,14 @@ import {
   ArrowDownToLine, 
   Plus, 
   CheckCircle2, 
-  Building2, 
-  FileText, 
-  Clock, 
   ArrowRight,
   ChevronDown,
-  ChevronUp,
-  Search,
-  Check
+  ChevronUp
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { getCategoryInfo } from '../types';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ProductModal from '../components/ProductModal';
+import ProductSearchBar from '../components/ProductSearchBar';
 
 export default function ReceiveView() {
   const { 
@@ -33,8 +28,6 @@ export default function ReceiveView() {
   const [refNumber, setRefNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [showOptionalFields, setShowOptionalFields] = useState(false);
-  const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
-  const [productSearch, setProductSearch] = useState('');
 
   // Modals
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -51,11 +44,10 @@ export default function ReceiveView() {
     }
   }, [preselectedProductId, products]);
 
-  const selectedProduct = products.find((p) => p.id === selectedProductId);
+  const selectedProduct = products.find((p) => p.id === selectedProductId) || null;
   const currentStock = selectedProduct ? selectedProduct.stock : 0;
   const numQuantity = parseInt(quantity, 10) || 0;
   const calculatedNewBalance = currentStock + numQuantity;
-  const categoryInfo = selectedProduct ? getCategoryInfo(selectedProduct.category) : null;
 
   const handleAdjustQuantity = (delta) => {
     const current = parseInt(quantity, 10) || 0;
@@ -73,7 +65,7 @@ export default function ReceiveView() {
   const handleOpenReview = (e) => {
     e.preventDefault();
     if (!selectedProduct) {
-      setError('Please select a product first.');
+      setError('Please select or search for a product first.');
       return;
     }
     if (numQuantity <= 0) {
@@ -117,11 +109,6 @@ export default function ReceiveView() {
     }
   };
 
-  const filteredPickerProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(productSearch.toLowerCase()) ||
-    (p.code && p.code.toLowerCase().includes(productSearch.toLowerCase()))
-  );
-
   return (
     <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
       {/* Title */}
@@ -136,7 +123,8 @@ export default function ReceiveView() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.2)'
+            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.2)',
+            flexShrink: 0
           }}
         >
           <ArrowDownToLine size={22} strokeWidth={2.4} />
@@ -194,12 +182,12 @@ export default function ReceiveView() {
       )}
 
       <form onSubmit={handleOpenReview}>
-        {/* Step 1: Select Product Card */}
+        {/* Step 1: Searchable Product Text Bar */}
         <div className="form-group">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span className="form-label" style={{ margin: 0 }}>
-              1. Select Product
-            </span>
+            <label className="form-label" style={{ margin: 0 }}>
+              1. Search Product
+            </label>
             <button
               type="button"
               onClick={() => setIsProductModalOpen(true)}
@@ -221,69 +209,25 @@ export default function ReceiveView() {
             </button>
           </div>
 
-          {selectedProduct ? (
-            <div
-              className="card"
-              onClick={() => setIsProductPickerOpen(true)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                cursor: 'pointer',
-                borderColor: 'var(--border-focus)',
-                background: 'var(--bg-card)'
-              }}
-            >
-              <div
-                className="category-avatar"
-                style={{ background: categoryInfo?.bg || '#f1f5f9' }}
-              >
-                {categoryInfo?.emoji || '📦'}
-              </div>
-
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {selectedProduct.name}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                  <span className="badge badge-code">{selectedProduct.code || 'SKU'}</span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    Current: <strong>{selectedProduct.stock} {selectedProduct.unit}</strong>
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                style={{
-                  background: 'var(--bg-surface)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-muted)',
-                  borderRadius: '8px',
-                  padding: '6px 10px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  flexShrink: 0
-                }}
-              >
-                Change
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="btn btn-secondary btn-block"
-              onClick={() => setIsProductPickerOpen(true)}
-            >
-              Tap to choose product
-            </button>
-          )}
+          {/* Dedicated Text Bar instead of dropdown */}
+          <ProductSearchBar
+            products={products}
+            selectedProduct={selectedProduct}
+            onSelectProduct={(p) => {
+              setSelectedProductId(p ? p.id : '');
+              setError('');
+            }}
+            onOpenCreateProduct={() => {
+              setIsProductModalOpen(true);
+            }}
+            placeholder="Type product name or SKU (e.g. Ferrero, Dior)..."
+            showStockStatus={true}
+          />
         </div>
 
         {/* Step 2: Quantity Stepper */}
         {selectedProduct && (
-          <div className="form-group">
+          <div className="form-group" style={{ marginTop: '14px' }}>
             <label className="form-label">
               2. Quantity to Receive ({selectedProduct.unit})
             </label>
@@ -293,6 +237,7 @@ export default function ReceiveView() {
                 className="stepper-btn"
                 onClick={() => handleAdjustQuantity(-1)}
                 disabled={numQuantity <= 1}
+                aria-label="Decrease quantity"
               >
                 -
               </button>
@@ -311,6 +256,7 @@ export default function ReceiveView() {
                 type="button"
                 className="stepper-btn"
                 onClick={() => handleAdjustQuantity(1)}
+                aria-label="Increase quantity"
               >
                 +
               </button>
@@ -429,86 +375,6 @@ export default function ReceiveView() {
           Review & Receive Stock
         </button>
       </form>
-
-      {/* Visual Product Picker Bottom Sheet */}
-      {isProductPickerOpen && (
-        <div className="modal-overlay" onClick={() => setIsProductPickerOpen(false)}>
-          <div className="modal-sheet" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title font-heading">Choose Product</h3>
-              <button
-                type="button"
-                className="icon-btn"
-                onClick={() => {
-                  setIsProductPickerOpen(false);
-                  setIsProductModalOpen(true);
-                }}
-                title="Create New Product"
-              >
-                <Plus size={18} />
-              </button>
-            </div>
-
-            {/* Picker Search */}
-            <div style={{ position: 'relative', marginBottom: '14px' }}>
-              <Search
-                size={16}
-                color="var(--text-dim)"
-                style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }}
-              />
-              <input
-                type="text"
-                className="input"
-                placeholder="Search products..."
-                style={{ paddingLeft: '38px', fontSize: '0.88rem' }}
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '55vh', overflowY: 'auto' }}>
-              {filteredPickerProducts.map((p) => {
-                const cat = getCategoryInfo(p.category);
-                const isSelected = p.id === selectedProductId;
-
-                return (
-                  <div
-                    key={p.id}
-                    onClick={() => {
-                      setSelectedProductId(p.id);
-                      setIsProductPickerOpen(false);
-                    }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px',
-                      borderRadius: '12px',
-                      background: isSelected ? 'var(--primary-light)' : 'var(--bg-surface)',
-                      border: isSelected ? '1.5px solid var(--primary)' : '1px solid var(--border-color)',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div className="category-avatar" style={{ background: cat.bg, width: '38px', height: '38px', fontSize: '1.2rem' }}>
-                      {cat.emoji}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.92rem', color: 'var(--text-main)' }}>
-                        {p.name}
-                      </div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        Stock: <strong>{p.stock} {p.unit}</strong>
-                      </div>
-                    </div>
-                    {isSelected && <Check size={18} color="var(--primary)" />}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Confirmation Dialog */}
       <ConfirmDialog
