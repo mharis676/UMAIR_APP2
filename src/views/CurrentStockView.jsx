@@ -13,6 +13,7 @@ import { useApp } from '../context/AppContext';
 import { CATEGORIES_META, getCategoryInfo } from '../types';
 import ProductModal from '../components/ProductModal';
 import { WhatsAppProductStockButton, WhatsAppReportButton } from '../components/WhatsAppShareButton';
+import CustomDropdown from '../components/CustomDropdown';
 
 export default function CurrentStockView({ onOpenAddProduct }) {
   const { 
@@ -138,7 +139,7 @@ export default function CurrentStockView({ onOpenAddProduct }) {
             transition: 'all 0.15s ease'
           }}
         >
-          📦 All Items ({products.length})
+          All Items ({products.length})
         </button>
 
         {CATEGORIES_META.map((cat) => {
@@ -162,7 +163,7 @@ export default function CurrentStockView({ onOpenAddProduct }) {
                 transition: 'all 0.15s ease'
               }}
             >
-              {cat.emoji} {cat.name}
+              {cat.name}
             </button>
           );
         })}
@@ -171,17 +172,18 @@ export default function CurrentStockView({ onOpenAddProduct }) {
       {/* Sort Options */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '14px', gap: '8px' }}>
         <SlidersHorizontal size={14} color="var(--text-dim)" />
-        <select
-          className="select"
-          style={{ width: 'auto', padding: '6px 12px', fontSize: '0.78rem', borderRadius: '8px' }}
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="NAME_ASC">Name (A-Z)</option>
-          <option value="QTY_DESC">Highest Stock First</option>
-          <option value="QTY_ASC">Lowest Stock First</option>
-          <option value="UPDATED">Recently Active</option>
-        </select>
+        <div style={{ width: '180px' }}>
+          <CustomDropdown
+            value={sortBy}
+            onChange={(val) => setSortBy(val)}
+            options={[
+              { value: 'NAME_ASC', label: 'Name (A-Z)' },
+              { value: 'QTY_DESC', label: 'Highest Stock First' },
+              { value: 'QTY_ASC', label: 'Lowest Stock First' },
+              { value: 'UPDATED', label: 'Recently Active' }
+            ]}
+          />
+        </div>
       </div>
 
       {/* Products List */}

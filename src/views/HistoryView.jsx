@@ -17,6 +17,7 @@ import { storage } from '../storage';
 import ReversalModal from '../components/ReversalModal';
 import EditTransactionModal from '../components/EditTransactionModal';
 import WhatsAppShareButton, { WhatsAppIcon } from '../components/WhatsAppShareButton';
+import CustomDropdown from '../components/CustomDropdown';
 import { shareToWhatsApp } from '../utils/whatsapp';
 
 export default function HistoryView() {
@@ -135,9 +136,9 @@ export default function HistoryView() {
       <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', paddingBottom: '8px', marginBottom: '10px', scrollbarWidth: 'none' }}>
         {[
           { id: 'ALL', label: 'All Records' },
-          { id: 'RECEIVED', label: '📥 Received Only' },
-          { id: 'DELIVERED', label: '📤 Delivered Only' },
-          { id: 'REVERSAL', label: '🔄 Reversals' }
+          { id: 'RECEIVED', label: 'Received Only' },
+          { id: 'DELIVERED', label: 'Delivered Only' },
+          { id: 'REVERSAL', label: 'Reversals' }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -164,17 +165,18 @@ export default function HistoryView() {
       {/* Date Range Selector */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '14px', gap: '8px' }}>
         <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>Timeframe:</span>
-        <select
-          className="select"
-          style={{ width: 'auto', padding: '5px 10px', fontSize: '0.78rem', borderRadius: '8px' }}
-          value={dateFilter}
-          onChange={(e) => setDateFilter(e.target.value)}
-        >
-          <option value="ALL">All Time</option>
-          <option value="TODAY">Today</option>
-          <option value="WEEK">Last 7 Days</option>
-          <option value="MONTH">This Month</option>
-        </select>
+        <div style={{ width: '150px' }}>
+          <CustomDropdown
+            value={dateFilter}
+            onChange={(val) => setDateFilter(val)}
+            options={[
+              { value: 'ALL', label: 'All Time' },
+              { value: 'TODAY', label: 'Today' },
+              { value: 'WEEK', label: 'Last 7 Days' },
+              { value: 'MONTH', label: 'This Month' }
+            ]}
+          />
+        </div>
       </div>
 
       {/* Transaction Records List */}

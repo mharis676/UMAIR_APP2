@@ -13,15 +13,15 @@ export const UNIT_OPTIONS = [
 ];
 
 export const CATEGORIES_META = [
-  { name: 'Confectionery & Chocolates', emoji: '🍫', color: '#f59e0b', bg: '#fef3c7' },
-  { name: 'Perfumes & Fragrances', emoji: '🌸', color: '#ec4899', bg: '#fce7f3' },
-  { name: 'Cosmetics & Skincare', emoji: '💄', color: '#8b5cf6', bg: '#ede9fe' },
-  { name: 'Groceries & Foods', emoji: '🍚', color: '#10b981', bg: '#d1fae5' },
-  { name: 'Electronics & Accessories', emoji: '⚡', color: '#06b6d4', bg: '#cffafe' },
-  { name: 'Beverages', emoji: '🥤', color: '#3b82f6', bg: '#dbeafe' },
-  { name: 'Pharmaceuticals', emoji: '💊', color: '#ef4444', bg: '#fee2e2' },
-  { name: 'Apparel & Textiles', emoji: '👕', color: '#6366f1', bg: '#e0e7ff' },
-  { name: 'General Supplies', emoji: '📦', color: '#64748b', bg: '#f1f5f9' }
+  { name: 'Confectionery & Chocolates', color: '#f59e0b', bg: '#fef3c7' },
+  { name: 'Perfumes & Fragrances', color: '#ec4899', bg: '#fce7f3' },
+  { name: 'Cosmetics & Skincare', color: '#8b5cf6', bg: '#ede9fe' },
+  { name: 'Groceries & Foods', color: '#10b981', bg: '#d1fae5' },
+  { name: 'Electronics & Accessories', color: '#06b6d4', bg: '#cffafe' },
+  { name: 'Beverages', color: '#3b82f6', bg: '#dbeafe' },
+  { name: 'Pharmaceuticals', color: '#ef4444', bg: '#fee2e2' },
+  { name: 'Apparel & Textiles', color: '#6366f1', bg: '#e0e7ff' },
+  { name: 'General Supplies', color: '#64748b', bg: '#f1f5f9' }
 ];
 
 export const CATEGORY_OPTIONS = CATEGORIES_META.map(c => c.name);

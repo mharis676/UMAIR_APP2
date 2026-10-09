@@ -3,6 +3,7 @@ import { X, Sparkles, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { UNIT_OPTIONS, CATEGORIES_META, CATEGORY_OPTIONS } from '../types';
 import { WhatsAppProductStockButton } from './WhatsAppShareButton';
+import CustomDropdown from './CustomDropdown';
 
 export default function ProductModal({ isOpen, onClose, editingProduct = null, onCreatedCallback = null }) {
   const { addProduct, updateProduct, operator } = useApp();
@@ -178,18 +179,15 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
               <span>Category</span>
               <span className="optional">Optional</span>
             </label>
-            <select
-              className="select"
+            <CustomDropdown
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              {CATEGORIES_META.map((cat) => (
-                <option key={cat.name} value={cat.name}>
-                  {cat.emoji} {cat.name}
-                </option>
-              ))}
-              <option value="Other">📦 Other (Custom Category)</option>
-            </select>
+              onChange={(val) => setCategory(val)}
+              options={[
+                ...CATEGORIES_META.map((cat) => ({ value: cat.name, label: cat.name })),
+                { value: 'Other', label: 'Other (Custom Category)' }
+              ]}
+              placeholder="Select category..."
+            />
             {category === 'Other' && (
               <input
                 type="text"
@@ -206,18 +204,15 @@ export default function ProductModal({ isOpen, onClose, editingProduct = null, o
             <label className="form-label">
               Unit of Measurement *
             </label>
-            <select
-              className="select"
+            <CustomDropdown
               value={unit}
-              onChange={(e) => setUnit(e.target.value)}
-            >
-              {UNIT_OPTIONS.map((u) => (
-                <option key={u} value={u}>
-                  {u}
-                </option>
-              ))}
-              <option value="custom">Custom unit...</option>
-            </select>
+              onChange={(val) => setUnit(val)}
+              options={[
+                ...UNIT_OPTIONS.map((u) => ({ value: u, label: u })),
+                { value: 'custom', label: 'Custom unit...' }
+              ]}
+              placeholder="Select unit..."
+            />
             {unit === 'custom' && (
               <input
                 type="text"
