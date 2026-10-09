@@ -1,7 +1,8 @@
 import React, { useRef } from 'react';
-import { Database, Download, Upload, FileSpreadsheet, RotateCcw, X, Smartphone } from 'lucide-react';
+import { Database, Download, Upload, FileText, RotateCcw, X, Smartphone } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { storage } from '../storage';
+import { exportHistoryPDF, exportInventoryPDF } from '../utils/pdfExport';
 
 export default function BackupModal({ isOpen, onClose }) {
   const { products, transactions, resetAllData, importDataFromJSON, showToast } = useApp();
@@ -14,14 +15,14 @@ export default function BackupModal({ isOpen, onClose }) {
     showToast('Stock data backup downloaded (JSON)!');
   };
 
-  const handleExportHistoryCSV = () => {
-    storage.exportHistoryCSV(transactions);
-    showToast('Transaction history CSV downloaded!');
+  const handleExportHistoryPDF = () => {
+    exportHistoryPDF(transactions);
+    showToast('Transaction history PDF downloaded!');
   };
 
-  const handleExportInventoryCSV = () => {
-    storage.exportInventoryCSV(products);
-    showToast('Inventory stock CSV downloaded!');
+  const handleExportInventoryPDF = () => {
+    exportInventoryPDF(products);
+    showToast('Inventory stock PDF downloaded!');
   };
 
   const handleFileChange = (e) => {
@@ -112,25 +113,25 @@ export default function BackupModal({ isOpen, onClose }) {
             style={{ display: 'none' }}
           />
 
-          {/* Export CSVs */}
+          {/* Export PDFs */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
             <button
               type="button"
               className="btn btn-secondary"
               style={{ fontSize: '0.82rem', padding: '12px' }}
-              onClick={handleExportHistoryCSV}
+              onClick={handleExportHistoryPDF}
             >
-              <FileSpreadsheet size={16} color="var(--primary)" />
-              CSV History
+              <FileText size={16} color="var(--primary)" />
+              PDF History
             </button>
             <button
               type="button"
               className="btn btn-secondary"
               style={{ fontSize: '0.82rem', padding: '12px' }}
-              onClick={handleExportInventoryCSV}
+              onClick={handleExportInventoryPDF}
             >
-              <FileSpreadsheet size={16} color="var(--primary)" />
-              CSV Stock
+              <FileText size={16} color="var(--primary)" />
+              PDF Stock
             </button>
           </div>
         </div>

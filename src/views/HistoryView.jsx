@@ -19,6 +19,7 @@ import EditTransactionModal from '../components/EditTransactionModal';
 import WhatsAppShareButton, { WhatsAppIcon } from '../components/WhatsAppShareButton';
 import CustomDropdown from '../components/CustomDropdown';
 import { shareToWhatsApp } from '../utils/whatsapp';
+import { exportHistoryPDF } from '../utils/pdfExport';
 
 export default function HistoryView() {
   const { transactions, showToast } = useApp();
@@ -66,9 +67,9 @@ export default function HistoryView() {
     });
   }, [transactions, searchTerm, typeFilter, dateFilter]);
 
-  const handleExportCSV = () => {
-    storage.exportHistoryCSV(filteredTransactions);
-    showToast('Transaction records exported to CSV!');
+  const handleExportPDF = () => {
+    exportHistoryPDF(filteredTransactions);
+    showToast('Transaction report downloaded (PDF)!');
   };
 
   const handleOpenReversal = (tx, e) => {
@@ -85,7 +86,7 @@ export default function HistoryView() {
 
   return (
     <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
-      {/* Title & CSV Export */}
+      {/* Title & PDF Export */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
         <div>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.15 }} className="font-heading">
@@ -99,10 +100,10 @@ export default function HistoryView() {
         <button
           className="btn btn-secondary"
           style={{ padding: '8px 12px', fontSize: '0.78rem', borderRadius: '10px' }}
-          onClick={handleExportCSV}
-          title="Export records to CSV"
+          onClick={handleExportPDF}
+          title="Download transaction records as PDF"
         >
-          <Download size={14} /> Export CSV
+          <FileText size={14} /> Export PDF
         </button>
       </div>
 
