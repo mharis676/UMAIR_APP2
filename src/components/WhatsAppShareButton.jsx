@@ -2,7 +2,8 @@ import React from 'react';
 import { 
   shareToWhatsApp, 
   shareProductStockToWhatsApp, 
-  shareInventoryReportToWhatsApp 
+  shareInventoryReportToWhatsApp,
+  shareBatchToWhatsApp 
 } from '../utils/whatsapp';
 
 export function WhatsAppIcon({ size = 18, color = 'currentColor' }) {
@@ -165,6 +166,51 @@ export function WhatsAppReportButton({
       title="Share current inventory stock report on WhatsApp"
     >
       <WhatsAppIcon size={16} color="#ffffff" />
+      <span>{label}</span>
+    </button>
+  );
+}
+
+/**
+ * 1-Tap button to share multi-product batch slips on WhatsApp
+ */
+export function WhatsAppBatchShareButton({
+  batchData,
+  label = "Share Batch Slip on WhatsApp",
+  style = {},
+  variant = "solid"
+}) {
+  if (!batchData) return null;
+  const isSolid = variant === "solid";
+
+  return (
+    <button
+      type="button"
+      className="btn"
+      onClick={(e) => {
+        e.stopPropagation();
+        shareBatchToWhatsApp(batchData);
+      }}
+      style={{
+        background: isSolid ? '#25D366' : 'rgba(37, 211, 102, 0.1)',
+        color: isSolid ? '#ffffff' : '#16a34a',
+        border: isSolid ? 'none' : '1px solid #22c55e',
+        boxShadow: isSolid ? '0 4px 14px rgba(37, 211, 102, 0.35)' : 'none',
+        padding: '10px 16px',
+        fontSize: '0.84rem',
+        fontWeight: 600,
+        borderRadius: '10px',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        cursor: 'pointer',
+        transition: 'transform 0.15s ease',
+        ...style
+      }}
+      title="Share batch slip on WhatsApp"
+    >
+      <WhatsAppIcon size={18} color={isSolid ? '#ffffff' : '#16a34a'} />
       <span>{label}</span>
     </button>
   );

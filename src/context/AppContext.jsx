@@ -137,43 +137,69 @@ export function AppProvider({ children }) {
     return { success: true };
   }, [products, showToast]);
 
-  const receiveStock = useCallback(({ productId, quantity, party, refNumber, notes, customTimestamp }) => {
-    const qty = parseInt(quantity, 10);
-    if (isNaN(qty) || qty <= 0) {
-      return { success: false, error: 'Received quantity must be a positive number greater than zero.' };
+  const receiveStockBatch = useCallback(({ items, party, refNumber, notes, customTimestamp }) => {
+    if (!items || !items.length) {
+      return { success: false, error: 'No items selected to receive.' };
     }
 
-    const prod = products.find((p) => p.id === productId);
-    if (!prod) {
-      return { success: false, error: 'Selected product was not found.' };
-    }
-
-    const prevBalance = prod.stock;
-    const newBalance = prevBalance + qty;
     const timestamp = customTimestamp || new Date().toISOString();
+    const batchId = 'batch-' + Date.now();
+    const currentProductsMap = new Map(products.map((p) => [p.id, { ...p }]));
+    const createdTransactions = [];
+    const processedItems = [];
 
-    const tx = {
-      id: 'tx-' + Date.now(),
-      productId: prod.id,
-      productName: prod.name,
-      unit: prod.unit,
-      type: 'RECEIVED',
-      quantity: qty,
-      prevBalance,
-      newBalance,
-      party: (party || '').trim(),
-      refNumber: (refNumber || '').trim(),
-      notes: (notes || '').trim(),
-      operator,
-      timestamp,
-      reversed: false
-    };
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const targetId = it.productId || it.product?.id || it.id;
+      const qty = parseInt(it.quantity, 10);
+      if (isNaN(qty) || qty <= 0) {
+        return { success: false, error: `Invalid quantity for product ${it.product?.name || it.name || 'item'}.` };
+      }
 
-    const updatedProducts = products.map((p) =>
-      p.id === prod.id ? { ...p, stock: newBalance, updatedAt: timestamp } : p
-    );
+      const prod = currentProductsMap.get(targetId);
+      if (!prod) {
+        return { success: false, error: `Product not found for one of the items.` };
+      }
 
-    const updatedTransactions = [tx, ...transactions];
+      const prevBalance = prod.stock;
+      const newBalance = prevBalance + qty;
+      prod.stock = newBalance;
+      prod.updatedAt = timestamp;
+
+      const tx = {
+        id: `tx-${Date.now()}-${i}`,
+        batchId,
+        productId: prod.id,
+        productName: prod.name,
+        unit: prod.unit,
+        type: 'RECEIVED',
+        quantity: qty,
+        prevBalance,
+        newBalance,
+        party: (party || '').trim(),
+        refNumber: (refNumber || '').trim(),
+        notes: (notes || '').trim(),
+        operator,
+        timestamp,
+        reversed: false
+      };
+
+      createdTransactions.push(tx);
+      processedItems.push({
+        ...it,
+        product: prod,
+        productId: prod.id,
+        productName: prod.name,
+        code: prod.code,
+        unit: prod.unit,
+        quantity: qty,
+        prevBalance,
+        newBalance
+      });
+    }
+
+    const updatedProducts = Array.from(currentProductsMap.values());
+    const updatedTransactions = [...createdTransactions, ...transactions];
 
     storage.setProducts(updatedProducts);
     storage.setTransactions(updatedTransactions);
@@ -181,62 +207,150 @@ export function AppProvider({ children }) {
     setTransactions(updatedTransactions);
 
     triggerCelebration();
-    return { success: true, transaction: tx, prevBalance, newBalance };
+    return {
+      success: true,
+      batchId,
+      items: processedItems,
+      transactions: createdTransactions,
+      party,
+      refNumber,
+      notes,
+      timestamp
+    };
+  }, [products, transactions, operator, triggerCelebration]);
+
+  const receiveStock = useCallback(({ productId, quantity, party, refNumber, notes, customTimestamp }) => {
+    const res = receiveStockBatch({
+      items: [{ productId, quantity }],
+      party,
+      refNumber,
+      notes,
+      customTimestamp
+    });
+    if (res.success) {
+      return {
+        success: true,
+        transaction: res.transactions[0],
+        prevBalance: res.items[0].prevBalance,
+        newBalance: res.items[0].newBalance
+      };
+    }
+    return res;
+  }, [receiveStockBatch]);
+
+  const deliverStockBatch = useCallback(({ items, party, refNumber, notes, customTimestamp }) => {
+    if (!items || !items.length) {
+      return { success: false, error: 'No items selected to deliver.' };
+    }
+
+    const timestamp = customTimestamp || new Date().toISOString();
+    const batchId = 'batch-' + Date.now();
+    const currentProductsMap = new Map(products.map((p) => [p.id, { ...p }]));
+    const createdTransactions = [];
+    const processedItems = [];
+
+    // Pre-validate stock availability for ALL items before deducting anything
+    for (const it of items) {
+      const targetId = it.productId || it.product?.id || it.id;
+      const qty = parseInt(it.quantity, 10);
+      if (isNaN(qty) || qty <= 0) {
+        return { success: false, error: `Invalid quantity for product ${it.product?.name || it.name || 'item'}.` };
+      }
+      const prod = currentProductsMap.get(targetId);
+      if (!prod) {
+        return { success: false, error: 'Product not found for one of the items.' };
+      }
+      if (qty > prod.stock) {
+        return {
+          success: false,
+          error: `Insufficient stock for "${prod.name}". Cannot deliver ${qty} ${prod.unit} (Only ${prod.stock} ${prod.unit} available).`
+        };
+      }
+    }
+
+    // Process all deductions
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const targetId = it.productId || it.product?.id || it.id;
+      const qty = parseInt(it.quantity, 10);
+      const prod = currentProductsMap.get(targetId);
+
+      const prevBalance = prod.stock;
+      const newBalance = prevBalance - qty;
+      prod.stock = newBalance;
+      prod.updatedAt = timestamp;
+
+      const tx = {
+        id: `tx-${Date.now()}-${i}`,
+        batchId,
+        productId: prod.id,
+        productName: prod.name,
+        unit: prod.unit,
+        type: 'DELIVERED',
+        quantity: qty,
+        prevBalance,
+        newBalance,
+        party: (party || '').trim(),
+        refNumber: (refNumber || '').trim(),
+        notes: (notes || '').trim(),
+        operator,
+        timestamp,
+        reversed: false
+      };
+
+      createdTransactions.push(tx);
+      processedItems.push({
+        ...it,
+        product: prod,
+        productId: prod.id,
+        productName: prod.name,
+        code: prod.code,
+        unit: prod.unit,
+        quantity: qty,
+        prevBalance,
+        newBalance
+      });
+    }
+
+    const updatedProducts = Array.from(currentProductsMap.values());
+    const updatedTransactions = [...createdTransactions, ...transactions];
+
+    storage.setProducts(updatedProducts);
+    storage.setTransactions(updatedTransactions);
+    setProducts(updatedProducts);
+    setTransactions(updatedTransactions);
+
+    triggerCelebration();
+    return {
+      success: true,
+      batchId,
+      items: processedItems,
+      transactions: createdTransactions,
+      party,
+      refNumber,
+      notes,
+      timestamp
+    };
   }, [products, transactions, operator, triggerCelebration]);
 
   const deliverStock = useCallback(({ productId, quantity, party, refNumber, notes, customTimestamp }) => {
-    const qty = parseInt(quantity, 10);
-    if (isNaN(qty) || qty <= 0) {
-      return { success: false, error: 'Delivery quantity must be a positive number greater than zero.' };
-    }
-
-    const prod = products.find((p) => p.id === productId);
-    if (!prod) {
-      return { success: false, error: 'Selected product was not found.' };
-    }
-
-    if (qty > prod.stock) {
+    const res = deliverStockBatch({
+      items: [{ productId, quantity }],
+      party,
+      refNumber,
+      notes,
+      customTimestamp
+    });
+    if (res.success) {
       return {
-        success: false,
-        error: `Cannot deliver ${qty} ${prod.unit}. Only ${prod.stock} ${prod.unit} available in stock.`
+        success: true,
+        transaction: res.transactions[0],
+        prevBalance: res.items[0].prevBalance,
+        newBalance: res.items[0].newBalance
       };
     }
-
-    const prevBalance = prod.stock;
-    const newBalance = prevBalance - qty;
-    const timestamp = customTimestamp || new Date().toISOString();
-
-    const tx = {
-      id: 'tx-' + Date.now(),
-      productId: prod.id,
-      productName: prod.name,
-      unit: prod.unit,
-      type: 'DELIVERED',
-      quantity: qty,
-      prevBalance,
-      newBalance,
-      party: (party || '').trim(),
-      refNumber: (refNumber || '').trim(),
-      notes: (notes || '').trim(),
-      operator,
-      timestamp,
-      reversed: false
-    };
-
-    const updatedProducts = products.map((p) =>
-      p.id === prod.id ? { ...p, stock: newBalance, updatedAt: timestamp } : p
-    );
-
-    const updatedTransactions = [tx, ...transactions];
-
-    storage.setProducts(updatedProducts);
-    storage.setTransactions(updatedTransactions);
-    setProducts(updatedProducts);
-    setTransactions(updatedTransactions);
-
-    triggerCelebration();
-    return { success: true, transaction: tx, prevBalance, newBalance };
-  }, [products, transactions, operator, triggerCelebration]);
+    return res;
+  }, [deliverStockBatch]);
 
   // Controlled Reversal Process: Preserves original record & adds explicit offsetting record
   const reverseTransaction = useCallback(({ transactionId, reason }) => {
@@ -430,7 +544,9 @@ export function AppProvider({ children }) {
         addProduct,
         updateProduct,
         receiveStock,
+        receiveStockBatch,
         deliverStock,
+        deliverStockBatch,
         reverseTransaction,
         updateTransaction,
         resetAllData,

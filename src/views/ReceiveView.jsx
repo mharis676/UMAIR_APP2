@@ -6,54 +6,60 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
-  Edit3
+  Trash2,
+  Package,
+  Layers,
+  RotateCcw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import ProductModal from '../components/ProductModal';
-import EditTransactionModal from '../components/EditTransactionModal';
 import ProductSearchBar from '../components/ProductSearchBar';
-import WhatsAppShareButton from '../components/WhatsAppShareButton';
+import { WhatsAppBatchShareButton } from '../components/WhatsAppShareButton';
 
 export default function ReceiveView() {
   const { 
     products, 
-    receiveStock, 
+    receiveStockBatch, 
     preselectedProductId, 
     setPreselectedProductId,
     operator,
     setCurrentTab
   } = useApp();
 
-  const [isEditOpen, setIsEditOpen] = useState(false);
-
+  // Selected product in the search bar
   const [selectedProductId, setSelectedProductId] = useState('');
   const [quantity, setQuantity] = useState('10');
+
+  // Multi-product batch list: array of { product, quantity }
+  const [batchItems, setBatchItems] = useState([]);
+
+  // Optional batch details
   const [supplier, setSupplier] = useState('');
   const [refNumber, setRefNumber] = useState('');
   const [notes, setNotes] = useState('');
   const [showOptionalFields, setShowOptionalFields] = useState(false);
 
-  // Modals
+  // Modals & States
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [lastSuccessResult, setLastSuccessResult] = useState(null);
   const [error, setError] = useState('');
 
+  // Handle preselected product from other tabs
   useEffect(() => {
     if (preselectedProductId) {
       setSelectedProductId(preselectedProductId);
       setPreselectedProductId(null);
-    } else if (!selectedProductId && products.length > 0) {
+    } else if (!selectedProductId && products.length > 0 && batchItems.length === 0) {
       setSelectedProductId(products[0].id);
     }
   }, [preselectedProductId, products]);
 
   const selectedProduct = products.find((p) => p.id === selectedProductId) || null;
-  const currentStock = selectedProduct ? selectedProduct.stock : 0;
   const numQuantity = parseInt(quantity, 10) || 0;
-  const calculatedNewBalance = currentStock + numQuantity;
 
+  // Adjust input stepper quantity
   const handleAdjustQuantity = (delta) => {
     const current = parseInt(quantity, 10) || 0;
     const next = Math.max(1, current + delta);
@@ -61,32 +67,138 @@ export default function ReceiveView() {
     setError('');
   };
 
+  // Quick preset buttons
   const handleAddPreset = (amount) => {
     const current = parseInt(quantity, 10) || 0;
     setQuantity(String(current + amount));
     setError('');
   };
 
-  const handleOpenReview = (e) => {
-    e.preventDefault();
+  // Add currently selected product and quantity into batch list
+  const handleAddProductToBatch = () => {
     if (!selectedProduct) {
-      setError('Please select or search for a product first.');
+      setError('Please search and select a product first.');
       return;
     }
     if (numQuantity <= 0) {
       setError('Quantity received must be at least 1.');
       return;
     }
+
+    setBatchItems((prev) => {
+      const existingIndex = prev.findIndex((item) => item.product.id === selectedProduct.id);
+      if (existingIndex >= 0) {
+        // Increment quantity of existing item
+        const updated = [...prev];
+        const existing = updated[existingIndex];
+        const newQty = existing.quantity + numQuantity;
+        updated[existingIndex] = {
+          ...existing,
+          quantity: newQty,
+          prevBalance: selectedProduct.stock,
+          newBalance: selectedProduct.stock + newQty
+        };
+        return updated;
+      } else {
+        // Add new item to batch list
+        return [
+          ...prev,
+          {
+            product: selectedProduct,
+            quantity: numQuantity,
+            prevBalance: selectedProduct.stock,
+            newBalance: selectedProduct.stock + numQuantity
+          }
+        ];
+      }
+    });
+
+    setError('');
+    // Clear search selection so user can pick next product easily
+    setSelectedProductId('');
+    setQuantity('10');
+  };
+
+  // Inline adjustment inside batch items list
+  const handleUpdateBatchItemQty = (productId, delta) => {
+    setBatchItems((prev) =>
+      prev
+        .map((it) => {
+          if (it.product.id === productId) {
+            const nextQty = it.quantity + delta;
+            if (nextQty <= 0) return null; // Remove if zero
+            return {
+              ...it,
+              quantity: nextQty,
+              newBalance: it.product.stock + nextQty
+            };
+          }
+          return it;
+        })
+        .filter(Boolean)
+    );
+  };
+
+  // Remove specific item from batch
+  const handleRemoveBatchItem = (productId) => {
+    setBatchItems((prev) => prev.filter((it) => it.product.id !== productId));
+  };
+
+  // Clear all items in batch
+  const handleClearBatch = () => {
+    setBatchItems([]);
+    setError('');
+  };
+
+  // Total units across batch
+  const totalBatchUnits = batchItems.reduce((acc, it) => acc + it.quantity, 0);
+
+  // Compute items that will be submitted
+  const getSubmissionItems = () => {
+    let itemsToSubmit = [...batchItems];
+    // If user has a product selected in form but didn't click "Add to List", include it automatically
+    if (selectedProduct && numQuantity > 0) {
+      const existsIndex = itemsToSubmit.findIndex((it) => it.product.id === selectedProduct.id);
+      if (existsIndex >= 0) {
+        // Already in list, do not duplicate
+      } else {
+        itemsToSubmit.push({
+          product: selectedProduct,
+          quantity: numQuantity,
+          prevBalance: selectedProduct.stock,
+          newBalance: selectedProduct.stock + numQuantity
+        });
+      }
+    }
+    return itemsToSubmit;
+  };
+
+  // Open confirmation modal
+  const handleOpenReview = (e) => {
+    e.preventDefault();
+    const itemsToSubmit = getSubmissionItems();
+
+    if (itemsToSubmit.length === 0) {
+      setError('Please add at least one product with quantity to receive.');
+      return;
+    }
+
     setError('');
     setIsConfirmOpen(true);
   };
 
+  // Submit the batch receiving transaction
   const handleConfirmSubmit = () => {
+    const itemsToSubmit = getSubmissionItems();
     const timestamp = new Date().toISOString();
 
-    const res = receiveStock({
-      productId: selectedProduct.id,
-      quantity: numQuantity,
+    const formattedPayload = itemsToSubmit.map((it) => ({
+      productId: it.product.id,
+      quantity: it.quantity
+    }));
+
+    const res = receiveStockBatch({
+      items: formattedPayload,
       party: supplier,
       refNumber,
       notes,
@@ -97,14 +209,17 @@ export default function ReceiveView() {
 
     if (res.success) {
       setLastSuccessResult({
-        product: selectedProduct,
-        receivedQuantity: numQuantity,
-        prevBalance: res.prevBalance,
-        newBalance: res.newBalance,
-        refNumber: res.transaction.refNumber,
-        txId: res.transaction.id,
-        transaction: res.transaction
+        batchId: res.batchId,
+        items: res.items,
+        totalUnits: res.items.reduce((acc, it) => acc + it.quantity, 0),
+        party: supplier,
+        refNumber,
+        notes,
+        timestamp
       });
+      // Reset form and batch cart
+      setBatchItems([]);
+      setSelectedProductId('');
       setQuantity('10');
       setSupplier('');
       setRefNumber('');
@@ -115,10 +230,12 @@ export default function ReceiveView() {
     }
   };
 
+  const pendingSubmissionItems = getSubmissionItems();
+
   return (
     <div style={{ animation: 'fadeIn 0.25s ease-out' }}>
       {/* Title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '16px' }}>
         <div
           style={{
             width: '42px',
@@ -135,36 +252,85 @@ export default function ReceiveView() {
         >
           <ArrowDownToLine size={22} strokeWidth={2.4} />
         </div>
-        <div>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.15 }} className="font-heading">
             Receive Stock
           </h2>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            Record inbound goods and update balance
+            Receive single or multiple products at one time
           </p>
         </div>
+
+        {batchItems.length > 0 && (
+          <span className="badge badge-received" style={{ fontSize: '0.78rem', padding: '5px 10px' }}>
+            <Layers size={13} /> {batchItems.length} queued
+          </span>
+        )}
       </div>
 
-      {/* Success Card */}
+      {/* Success Card (Supports Batch) */}
       {lastSuccessResult && (
-        <div className="success-card">
+        <div className="success-card" style={{ marginBottom: '20px' }}>
           <div className="success-icon-wrap">
             <CheckCircle2 size={32} />
           </div>
-          <h3 className="font-heading" style={{ fontSize: '1.25rem', color: '#064e3b', marginBottom: '6px' }}>
+          <h3 className="font-heading" style={{ fontSize: '1.25rem', color: '#064e3b', marginBottom: '4px' }}>
             Stock Added Successfully!
           </h3>
-          <p style={{ fontSize: '0.92rem', color: '#065f46', marginBottom: '16px', lineHeight: '1.4' }}>
-            <strong>{lastSuccessResult.product.name}</strong><br />
-            Previous: {lastSuccessResult.prevBalance} {lastSuccessResult.product.unit} ➔ Received: +{lastSuccessResult.receivedQuantity} {lastSuccessResult.product.unit}<br />
-            <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#047857' }}>
-              New Balance: {lastSuccessResult.newBalance} {lastSuccessResult.product.unit}
-            </span>
+          <p style={{ fontSize: '0.88rem', color: '#065f46', marginBottom: '14px' }}>
+            Received <strong>{lastSuccessResult.items.length} {lastSuccessResult.items.length === 1 ? 'product' : 'products'}</strong> ({lastSuccessResult.totalUnits} total units)
           </p>
 
+          {/* Itemized received breakdown */}
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '12px',
+            padding: '10px 12px',
+            marginBottom: '16px',
+            border: '1px solid #a7f3d0',
+            maxHeight: '180px',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px'
+          }}>
+            {lastSuccessResult.items.map((it, idx) => (
+              <div
+                key={it.productId || idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '4px 0',
+                  borderBottom: idx < lastSuccessResult.items.length - 1 ? '1px dashed #e2e8f0' : 'none',
+                  fontSize: '0.84rem'
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1, paddingRight: '8px' }}>
+                  <div style={{ fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {it.productName || it.product?.name}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    Bal: {it.prevBalance} ➔ <strong style={{ color: '#059669' }}>{it.newBalance}</strong> {it.unit}
+                  </div>
+                </div>
+                <div style={{ fontWeight: 800, color: '#059669', fontSize: '0.95rem', flexShrink: 0 }}>
+                  +{it.quantity} {it.unit}
+                </div>
+              </div>
+            ))}
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <WhatsAppShareButton
-              transaction={lastSuccessResult.transaction}
+            <WhatsAppBatchShareButton
+              batchData={{
+                type: 'RECEIVED',
+                items: lastSuccessResult.items,
+                party: lastSuccessResult.party,
+                refNumber: lastSuccessResult.refNumber,
+                notes: lastSuccessResult.notes,
+                timestamp: lastSuccessResult.timestamp
+              }}
               label="Share Receiving Slip on WhatsApp"
               style={{ width: '100%', padding: '13px' }}
             />
@@ -185,15 +351,6 @@ export default function ReceiveView() {
                 View in History <ArrowRight size={14} />
               </button>
             </div>
-
-            <button
-              type="button"
-              className="btn btn-secondary"
-              style={{ width: '100%', fontSize: '0.78rem', padding: '8px 12px', color: 'var(--text-muted)' }}
-              onClick={() => setIsEditOpen(true)}
-            >
-              <Edit3 size={13} /> Made a mistake? Edit this entry
-            </button>
           </div>
         </div>
       )}
@@ -204,12 +361,153 @@ export default function ReceiveView() {
         </div>
       )}
 
+      {/* ACTIVE BATCH ITEMS LIST (CART) */}
+      {batchItems.length > 0 && (
+        <div style={{
+          background: 'var(--bg-card)',
+          border: '1.5px solid var(--receive-green)',
+          borderRadius: '16px',
+          padding: '14px',
+          marginBottom: '18px',
+          boxShadow: '0 4px 12px rgba(5, 150, 105, 0.08)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Layers size={16} color="var(--receive-green)" />
+              <strong style={{ fontSize: '0.92rem', color: 'var(--text-main)' }}>
+                Shipment List ({batchItems.length} {batchItems.length === 1 ? 'item' : 'items'})
+              </strong>
+            </div>
+            <button
+              type="button"
+              onClick={handleClearBatch}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--accent-rose)',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '2px 6px'
+              }}
+            >
+              <RotateCcw size={12} /> Clear List
+            </button>
+          </div>
+
+          {/* Scrollable list of items queued in shipment */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto', paddingRight: '2px' }}>
+            {batchItems.map((it) => (
+              <div
+                key={it.product.id}
+                style={{
+                  background: 'var(--bg-surface)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '12px',
+                  padding: '10px 12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px'
+                }}
+              >
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {it.product.name}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                    Bal: {it.product.stock} ➔ <strong style={{ color: 'var(--receive-green)' }}>{it.product.stock + it.quantity}</strong> {it.product.unit}
+                  </div>
+                </div>
+
+                {/* Inline mini stepper for this item */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateBatchItemQty(it.product.id, -1)}
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    -
+                  </button>
+                  <span style={{ minWidth: '36px', textAlign: 'center', fontWeight: 800, fontSize: '0.92rem', color: 'var(--receive-green)' }}>
+                    +{it.quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateBatchItemQty(it.product.id, 1)}
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '6px',
+                      background: 'var(--bg-card)',
+                      border: '1px solid var(--border-color)',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    +
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveBatchItem(it.product.id)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--text-dim)',
+                      padding: '4px',
+                      cursor: 'pointer',
+                      marginLeft: '2px'
+                    }}
+                    title="Remove product from shipment"
+                  >
+                    <Trash2 size={15} color="var(--accent-rose)" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Batch Units Totals Banner */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: '10px',
+            paddingTop: '8px',
+            borderTop: '1px dashed var(--border-color)',
+            fontSize: '0.84rem'
+          }}>
+            <span style={{ color: 'var(--text-muted)' }}>Total Units Queued:</span>
+            <strong style={{ fontSize: '1.05rem', color: 'var(--receive-green)', fontWeight: 800 }}>
+              +{totalBatchUnits.toLocaleString()} units
+            </strong>
+          </div>
+        </div>
+      )}
+
+      {/* FORM: SELECT PRODUCT & QUANTITY */}
       <form onSubmit={handleOpenReview}>
-        {/* Step 1: Searchable Product Text Bar */}
         <div className="form-group">
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
             <label className="form-label" style={{ margin: 0 }}>
-              1. Search Product
+              {batchItems.length > 0 ? '+ Add Another Product' : '1. Search Product'}
             </label>
             <button
               type="button"
@@ -232,7 +530,6 @@ export default function ReceiveView() {
             </button>
           </div>
 
-          {/* Dedicated Text Bar instead of dropdown */}
           <ProductSearchBar
             products={products}
             selectedProduct={selectedProduct}
@@ -243,16 +540,16 @@ export default function ReceiveView() {
             onOpenCreateProduct={() => {
               setIsProductModalOpen(true);
             }}
-            placeholder="Type product name or SKU (e.g. Ferrero, Dior)..."
+            placeholder="Type product name or SKU to receive..."
             showStockStatus={true}
           />
         </div>
 
-        {/* Step 2: Quantity Stepper */}
+        {/* Quantity Stepper for current selection */}
         {selectedProduct && (
           <div className="form-group" style={{ marginTop: '14px' }}>
             <label className="form-label">
-              2. Quantity to Receive ({selectedProduct.unit})
+              Quantity to Receive ({selectedProduct.unit})
             </label>
             <div className="stepper-container">
               <button
@@ -293,31 +590,52 @@ export default function ReceiveView() {
               <button type="button" className="quick-chip" onClick={() => handleAddPreset(50)}>+50</button>
               <button type="button" className="quick-chip" onClick={() => handleAddPreset(100)}>+100</button>
             </div>
+
+            {/* Visual single calculation */}
+            <div className="calculation-card" style={{ marginTop: '12px' }}>
+              <div className="calc-row">
+                <span style={{ color: 'var(--text-muted)' }}>Current Stock:</span>
+                <span style={{ fontWeight: 600 }}>{selectedProduct.stock} {selectedProduct.unit}</span>
+              </div>
+              <div className="calc-row">
+                <span style={{ color: 'var(--receive-green)', fontWeight: 600 }}>+ Adding:</span>
+                <span style={{ color: 'var(--receive-green)', fontWeight: 700 }}>+{numQuantity} {selectedProduct.unit}</span>
+              </div>
+              <div className="calc-row final">
+                <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Updated Balance:</span>
+                <span className="calc-final-num green">
+                  {selectedProduct.stock + numQuantity} {selectedProduct.unit}
+                </span>
+              </div>
+            </div>
+
+            {/* "+ Add to Shipment List" Button */}
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleAddProductToBatch}
+              style={{
+                width: '100%',
+                marginTop: '10px',
+                padding: '12px',
+                fontWeight: 700,
+                color: 'var(--receive-green)',
+                borderColor: 'var(--receive-green)',
+                background: 'var(--receive-green-light)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px'
+              }}
+            >
+              <Plus size={18} strokeWidth={2.5} />
+              Add "{selectedProduct.name}" to Shipment List
+            </button>
           </div>
         )}
 
-        {/* Calculation Visual Summary Card */}
-        {selectedProduct && numQuantity > 0 && (
-          <div className="calculation-card">
-            <div className="calc-row">
-              <span style={{ color: 'var(--text-muted)' }}>Current In-Stock:</span>
-              <span style={{ fontWeight: 600 }}>{currentStock} {selectedProduct.unit}</span>
-            </div>
-            <div className="calc-row">
-              <span style={{ color: 'var(--receive-green)', fontWeight: 600 }}>+ Arriving Stock:</span>
-              <span style={{ color: 'var(--receive-green)', fontWeight: 700 }}>+{numQuantity} {selectedProduct.unit}</span>
-            </div>
-            <div className="calc-row final">
-              <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>Updated Balance:</span>
-              <span className="calc-final-num green">
-                {calculatedNewBalance} {selectedProduct.unit}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Collapsible Optional Details */}
-        <div style={{ marginBottom: '18px' }}>
+        {/* Collapsible Optional Details (Supplier, Ref #, Notes) */}
+        <div style={{ margin: '18px 0' }}>
           <button
             type="button"
             onClick={() => setShowOptionalFields(!showOptionalFields)}
@@ -387,28 +705,29 @@ export default function ReceiveView() {
           )}
         </div>
 
-        {/* Submit Review Button */}
+        {/* Master Review Button */}
         <button
           type="submit"
           className="btn btn-success btn-block"
           style={{ padding: '16px' }}
-          disabled={!selectedProduct || numQuantity <= 0}
+          disabled={pendingSubmissionItems.length === 0}
         >
           <ArrowDownToLine size={20} strokeWidth={2.4} />
-          Review & Receive Stock
+          {pendingSubmissionItems.length > 1
+            ? `Review & Receive Shipment (${pendingSubmissionItems.length} Products)`
+            : (pendingSubmissionItems.length === 1
+                ? `Review & Receive (${pendingSubmissionItems[0].product.name})`
+                : 'Review & Receive Stock')}
         </button>
       </form>
 
-      {/* Confirmation Dialog */}
+      {/* Confirmation Dialog (Supports Single or Multi-Product Items) */}
       <ConfirmDialog
         isOpen={isConfirmOpen}
         onClose={() => setIsConfirmOpen(false)}
         onConfirm={handleConfirmSubmit}
         type="RECEIVE"
-        product={selectedProduct}
-        quantity={numQuantity}
-        prevBalance={currentStock}
-        newBalance={calculatedNewBalance}
+        items={pendingSubmissionItems}
         party={supplier}
         refNumber={refNumber}
         notes={notes}
@@ -423,16 +742,6 @@ export default function ReceiveView() {
         onCreatedCallback={(newProd) => {
           setSelectedProductId(newProd.id);
         }}
-      />
-
-      {/* Re-Edit Transaction Modal */}
-      <EditTransactionModal
-        isOpen={isEditOpen}
-        onClose={() => {
-          setIsEditOpen(false);
-          setLastSuccessResult(null);
-        }}
-        transaction={lastSuccessResult?.transaction}
       />
     </div>
   );

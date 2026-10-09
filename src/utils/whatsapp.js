@@ -159,5 +159,59 @@ export function shareInventoryReportToWhatsApp(products = [], options = {}) {
   openWhatsAppUrl(text);
 }
 
+/**
+ * Format multi-product batch receiving or delivery slip for WhatsApp
+ */
+export function generateBatchWhatsAppMessage({ type, items = [], party, refNumber, notes, timestamp }) {
+  const isReceive = type === 'RECEIVED';
+  const dateFormatted = formatSlipDate(timestamp);
+  const totalUnits = items.reduce((acc, it) => acc + (it.quantity || 0), 0);
+
+  const title = isReceive 
+    ? '*STOCK RECEIVED SLIP*' 
+    : '*STOCK DELIVERY DISPATCH SLIP*';
+
+  const lines = [
+    title,
+    '----------------------------------------',
+    isReceive
+      ? (party ? `• Supplier: *${party}*` : null)
+      : (party ? `• Recipient: *${party}*` : null),
+    refNumber ? `• Ref / Slip #: *${refNumber}*` : null,
+    `• Total Products: ${items.length} items`,
+    `• Total Units: *${totalUnits.toLocaleString()}* units`,
+    `• Date & Time: ${dateFormatted}`,
+    '----------------------------------------',
+    '',
+    isReceive ? '*RECEIVED ITEMS:*' : '*DELIVERED ITEMS:*',
+    ''
+  ].filter((line) => line !== null);
+
+  items.forEach((item, index) => {
+    const qtyStr = isReceive ? `+${item.quantity}` : `${item.quantity}`;
+    const codeStr = item.code ? ` | SKU: ${item.code}` : '';
+    const balStr = item.newBalance !== undefined ? ` | Balance: ${item.newBalance} ${item.unit || ''}` : '';
+    lines.push(`${index + 1}. *${item.productName || item.product?.name || item.name}*`);
+    lines.push(`   ${isReceive ? 'Received' : 'Dispatched'}: *${qtyStr} ${item.unit || 'units'}*${codeStr}${balStr}`);
+    lines.push('');
+  });
+
+  if (notes) {
+    lines.push(`• Notes: _${notes}_`);
+    lines.push('');
+  }
+
+  lines.push('----------------------------------------');
+  lines.push('_StockTrack Mobile App_');
+
+  return lines.join('\n');
+}
+
+export function shareBatchToWhatsApp(batchData) {
+  const text = generateBatchWhatsAppMessage(batchData);
+  openWhatsAppUrl(text);
+}
+
+
 
 
