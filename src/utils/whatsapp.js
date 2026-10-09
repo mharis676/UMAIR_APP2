@@ -3,6 +3,22 @@
  * Straightforward format with zero clutter.
  */
 
+function formatShortDate(timestamp) {
+  try {
+    const d = new Date(timestamp || Date.now());
+    return d.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch {
+    return new Date().toLocaleDateString();
+  }
+}
+
 function openWhatsAppUrl(text) {
   const encoded = encodeURIComponent(text);
   const url = `https://wa.me/?text=${encoded}`;
@@ -17,13 +33,15 @@ export function generateWhatsAppMessage(tx) {
 
   const isReceive = tx.type === 'RECEIVED';
   const isDeliver = tx.type === 'DELIVERED';
+  const dateStr = formatShortDate(tx.timestamp);
 
   if (isReceive) {
     const lines = [
-      `Stock Received: +${tx.quantity} ${tx.unit || 'units'} (${tx.productName || 'Item'})`,
-      `Total Stock: ${tx.newBalance ?? 0} ${tx.unit || 'units'}`
+      `Stock Received: +${tx.quantity} ${tx.unit || 'units'} (${tx.productName || 'Item'})`
     ];
-    if (tx.party) lines.push(`Supplier: ${tx.party}`);
+    if (tx.party) lines.push(`Received from: ${tx.party}`);
+    lines.push(`Total Stock: ${tx.newBalance ?? 0} ${tx.unit || 'units'}`);
+    lines.push(`Date: ${dateStr}`);
     if (tx.refNumber) lines.push(`Ref: ${tx.refNumber}`);
     return lines.join('\n');
   }
@@ -32,13 +50,14 @@ export function generateWhatsAppMessage(tx) {
     const lines = [
       `Stock: ${tx.quantity} ${tx.unit || 'units'} (${tx.productName || 'Item'})`
     ];
-    if (tx.party) lines.push(`Receiver: ${tx.party}`);
+    if (tx.party) lines.push(`Delivered to: ${tx.party}`);
     lines.push(`Remaining Stock: ${tx.newBalance ?? 0} ${tx.unit || 'units'}`);
+    lines.push(`Date: ${dateStr}`);
     if (tx.refNumber) lines.push(`Ref: ${tx.refNumber}`);
     return lines.join('\n');
   }
 
-  return `Stock: ${tx.quantity} ${tx.unit || 'units'} (${tx.productName})\nBalance: ${tx.newBalance ?? 0}`;
+  return `Stock: ${tx.quantity} ${tx.unit || 'units'} (${tx.productName})\nBalance: ${tx.newBalance ?? 0}\nDate: ${dateStr}`;
 }
 
 export function shareToWhatsApp(tx) {
@@ -49,9 +68,10 @@ export function shareToWhatsApp(tx) {
 /**
  * Multi-product batch receiving or delivery slip
  */
-export function generateBatchWhatsAppMessage({ type, items = [], party, refNumber }) {
+export function generateBatchWhatsAppMessage({ type, items = [], party, refNumber, timestamp }) {
   const isReceive = type === 'RECEIVED';
   const totalUnits = items.reduce((acc, it) => acc + (it.quantity || 0), 0);
+  const dateStr = formatShortDate(timestamp);
 
   if (isReceive) {
     const lines = ['Stock Received:'];
@@ -63,7 +83,8 @@ export function generateBatchWhatsAppMessage({ type, items = [], party, refNumbe
     });
     lines.push('');
     lines.push(`Total Received: +${totalUnits} units`);
-    if (party) lines.push(`Supplier: ${party}`);
+    if (party) lines.push(`Received from: ${party}`);
+    lines.push(`Date: ${dateStr}`);
     if (refNumber) lines.push(`Ref: ${refNumber}`);
     return lines.join('\n');
   }
@@ -78,7 +99,8 @@ export function generateBatchWhatsAppMessage({ type, items = [], party, refNumbe
   });
   lines.push('');
   lines.push(`Total Delivered: ${totalUnits} units`);
-  if (party) lines.push(`Receiver: ${party}`);
+  if (party) lines.push(`Delivered to: ${party}`);
+  lines.push(`Date: ${dateStr}`);
   if (refNumber) lines.push(`Ref: ${refNumber}`);
   return lines.join('\n');
 }
@@ -93,7 +115,8 @@ export function shareBatchToWhatsApp(batchData) {
  */
 export function generateProductStockMessage(product) {
   if (!product) return '';
-  return `Product: ${product.name}\nTotal Stock: ${product.stock || 0} ${product.unit || 'units'}`;
+  const dateStr = formatShortDate();
+  return `Product: ${product.name}\nTotal Stock: ${product.stock || 0} ${product.unit || 'units'}\nDate: ${dateStr}`;
 }
 
 export function shareProductStockToWhatsApp(product) {
@@ -106,9 +129,11 @@ export function shareProductStockToWhatsApp(product) {
  */
 export function generateInventoryReportMessage(products = []) {
   const totalUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
+  const dateStr = formatShortDate();
 
   const lines = [
     `Total Stock: ${totalUnits.toLocaleString()} units`,
+    `Date: ${dateStr}`,
     ''
   ];
 
