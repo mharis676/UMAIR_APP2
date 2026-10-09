@@ -1,81 +1,44 @@
 /**
- * WhatsApp message generation utilities.
- * Uses clean, universal ASCII formatting (no non-standard symbols or emojis)
- * to prevent character replacement errors () across all Android and iOS devices.
+ * Ultra-simple WhatsApp message generators.
+ * Straightforward format with zero clutter.
  */
-
-function formatSlipDate(timestamp) {
-  try {
-    const d = new Date(timestamp || Date.now());
-    return d.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  } catch {
-    return new Date().toLocaleDateString();
-  }
-}
 
 function openWhatsAppUrl(text) {
   const encoded = encodeURIComponent(text);
-  // Universal WhatsApp deep link: works natively on Android, iOS & WhatsApp Web
   const url = `https://wa.me/?text=${encoded}`;
   window.open(url, '_blank', 'noopener,noreferrer');
 }
 
 /**
- * Single-product transaction slip (Receiving or Delivery)
+ * Single product transaction slip (Delivery or Receiving)
  */
 export function generateWhatsAppMessage(tx) {
   if (!tx) return '';
 
   const isReceive = tx.type === 'RECEIVED';
   const isDeliver = tx.type === 'DELIVERED';
-  const dateFormatted = formatSlipDate(tx.timestamp);
 
-  const title = isReceive 
-    ? '*STOCK RECEIVED SLIP*' 
-    : isDeliver 
-    ? '*STOCK DELIVERY DISPATCH SLIP*' 
-    : '*STOCK TRANSACTION SLIP*';
-
-  const lines = [
-    title,
-    '----------------------------------------',
-    `Product: *${tx.productName || 'N/A'}*`,
-    isReceive
-      ? `Quantity Received: *+${tx.quantity} ${tx.unit || 'units'}*`
-      : `Quantity Dispatched: *-${tx.quantity} ${tx.unit || 'units'}*`,
-    '',
-    `Previous Stock: ${tx.prevBalance ?? 0} ${tx.unit || 'units'}`,
-    isReceive
-      ? `Updated Balance: *${tx.newBalance ?? 0} ${tx.unit || 'units'}*`
-      : `Remaining Balance: *${tx.newBalance ?? 0} ${tx.unit || 'units'}*`,
-    '----------------------------------------'
-  ];
-
-  if (tx.party) {
-    lines.push(isReceive ? `Supplier: *${tx.party}*` : `Recipient: *${tx.party}*`);
+  if (isReceive) {
+    const lines = [
+      `Stock Received: +${tx.quantity} ${tx.unit || 'units'} (${tx.productName || 'Item'})`,
+      `Total Stock: ${tx.newBalance ?? 0} ${tx.unit || 'units'}`
+    ];
+    if (tx.party) lines.push(`Supplier: ${tx.party}`);
+    if (tx.refNumber) lines.push(`Ref: ${tx.refNumber}`);
+    return lines.join('\n');
   }
 
-  if (tx.refNumber) {
-    lines.push(`Ref / DO #: *${tx.refNumber}*`);
+  if (isDeliver) {
+    const lines = [
+      `Stock: ${tx.quantity} ${tx.unit || 'units'} (${tx.productName || 'Item'})`
+    ];
+    if (tx.party) lines.push(`Receiver: ${tx.party}`);
+    lines.push(`Remaining Stock: ${tx.newBalance ?? 0} ${tx.unit || 'units'}`);
+    if (tx.refNumber) lines.push(`Ref: ${tx.refNumber}`);
+    return lines.join('\n');
   }
 
-  lines.push(`Date & Time: ${dateFormatted}`);
-
-  if (tx.notes) {
-    lines.push(`Notes: _${tx.notes}_`);
-  }
-
-  lines.push('----------------------------------------');
-  lines.push('_StockTrack App_');
-
-  return lines.join('\n');
+  return `Stock: ${tx.quantity} ${tx.unit || 'units'} (${tx.productName})\nBalance: ${tx.newBalance ?? 0}`;
 }
 
 export function shareToWhatsApp(tx) {
@@ -86,53 +49,37 @@ export function shareToWhatsApp(tx) {
 /**
  * Multi-product batch receiving or delivery slip
  */
-export function generateBatchWhatsAppMessage({ type, items = [], party, refNumber, notes, timestamp }) {
+export function generateBatchWhatsAppMessage({ type, items = [], party, refNumber }) {
   const isReceive = type === 'RECEIVED';
-  const dateFormatted = formatSlipDate(timestamp);
   const totalUnits = items.reduce((acc, it) => acc + (it.quantity || 0), 0);
 
-  const title = isReceive 
-    ? '*STOCK RECEIVED SLIP*' 
-    : '*STOCK DELIVERY DISPATCH SLIP*';
-
-  const lines = [
-    title,
-    '----------------------------------------',
-    isReceive
-      ? (party ? `Supplier: *${party}*` : null)
-      : (party ? `Recipient: *${party}*` : null),
-    refNumber ? `Ref / DO #: *${refNumber}*` : null,
-    `Total Products: ${items.length} ${items.length === 1 ? 'item' : 'items'}`,
-    `Total Units: *${totalUnits.toLocaleString()}* units`,
-    `Date & Time: ${dateFormatted}`,
-    '----------------------------------------',
-    '',
-    isReceive ? '*RECEIVED ITEMS:*' : '*DISPATCHED ITEMS:*',
-    ''
-  ].filter((line) => line !== null);
-
-  items.forEach((item, index) => {
-    const qtySign = isReceive ? '+' : '-';
-    const name = item.productName || item.product?.name || item.name || 'Product';
-    const unit = item.unit || item.product?.unit || 'units';
-    const sku = item.code || item.product?.code ? ` [${item.code || item.product?.code}]` : '';
-    const balance = item.newBalance !== undefined 
-      ? `\n   Balance: ${item.newBalance} ${unit}`
-      : '';
-
-    lines.push(`${index + 1}. *${name}*${sku}`);
-    lines.push(`   Quantity: *${qtySign}${item.quantity} ${unit}*${balance}`);
+  if (isReceive) {
+    const lines = ['Stock Received:'];
+    items.forEach((item, index) => {
+      const name = item.productName || item.product?.name || item.name || 'Product';
+      const unit = item.unit || item.product?.unit || 'units';
+      const balStr = item.newBalance !== undefined ? ` (Total: ${item.newBalance})` : '';
+      lines.push(`${index + 1}. ${name}: +${item.quantity} ${unit}${balStr}`);
+    });
     lines.push('');
-  });
-
-  if (notes) {
-    lines.push('----------------------------------------');
-    lines.push(`Notes: _${notes}_`);
+    lines.push(`Total Received: +${totalUnits} units`);
+    if (party) lines.push(`Supplier: ${party}`);
+    if (refNumber) lines.push(`Ref: ${refNumber}`);
+    return lines.join('\n');
   }
 
-  lines.push('----------------------------------------');
-  lines.push('_StockTrack App_');
-
+  // Delivery
+  const lines = ['Stock:'];
+  items.forEach((item, index) => {
+    const name = item.productName || item.product?.name || item.name || 'Product';
+    const unit = item.unit || item.product?.unit || 'units';
+    const balStr = item.newBalance !== undefined ? ` (Remaining: ${item.newBalance})` : '';
+    lines.push(`${index + 1}. ${name}: ${item.quantity} ${unit}${balStr}`);
+  });
+  lines.push('');
+  lines.push(`Total Delivered: ${totalUnits} units`);
+  if (party) lines.push(`Receiver: ${party}`);
+  if (refNumber) lines.push(`Ref: ${refNumber}`);
   return lines.join('\n');
 }
 
@@ -142,31 +89,11 @@ export function shareBatchToWhatsApp(batchData) {
 }
 
 /**
- * Single product current stock balance inquiry
+ * Single product stock inquiry
  */
 export function generateProductStockMessage(product) {
   if (!product) return '';
-
-  const dateFormatted = formatSlipDate();
-  const isOutOfStock = (product.stock || 0) <= 0;
-  const sku = product.code ? `\nSKU / Code: *${product.code}*` : '';
-  const category = product.category ? `\nCategory: *${product.category}*` : '';
-
-  const lines = [
-    '*CURRENT STOCK BALANCE*',
-    '----------------------------------------',
-    `Product: *${product.name || 'N/A'}*${sku}${category}`,
-    '',
-    isOutOfStock 
-      ? `In-Stock: *0 ${product.unit || 'units'} (OUT OF STOCK)*`
-      : `In-Stock: *${product.stock} ${product.unit || 'units'}*`,
-    '----------------------------------------',
-    `Date & Time: ${dateFormatted}`,
-    '----------------------------------------',
-    '_StockTrack App_'
-  ];
-
-  return lines.join('\n');
+  return `Product: ${product.name}\nTotal Stock: ${product.stock || 0} ${product.unit || 'units'}`;
 }
 
 export function shareProductStockToWhatsApp(product) {
@@ -177,42 +104,21 @@ export function shareProductStockToWhatsApp(product) {
 /**
  * Complete current inventory stock report
  */
-export function generateInventoryReportMessage(products = [], { categoryName = 'All Items' } = {}) {
-  const dateFormatted = formatSlipDate();
+export function generateInventoryReportMessage(products = []) {
   const totalUnits = products.reduce((sum, p) => sum + (p.stock || 0), 0);
-  const scopeLabel = categoryName && categoryName !== 'ALL' && categoryName !== 'All Items'
-    ? categoryName
-    : 'Complete Inventory (All Items)';
 
   const lines = [
-    '*INVENTORY STOCK REPORT*',
-    '----------------------------------------',
-    `Scope: ${scopeLabel}`,
-    `Total Products: ${products.length} items`,
-    `Total Stock on Hand: *${totalUnits.toLocaleString()}* units`,
-    `Date & Time: ${dateFormatted}`,
-    '----------------------------------------',
-    '',
-    '*CURRENT STOCK BREAKDOWN:*',
+    `Total Stock: ${totalUnits.toLocaleString()} units`,
     ''
   ];
 
   if (products.length === 0) {
-    lines.push('_No products recorded in this selection._');
+    lines.push('No products recorded.');
   } else {
     products.forEach((p, index) => {
-      const codeStr = p.code ? ` [${p.code}]` : '';
-      const stockStr = (p.stock || 0) <= 0 
-        ? '*0 (Out of stock)*' 
-        : `*${p.stock} ${p.unit || 'units'}*`;
-      lines.push(`${index + 1}. *${p.name}*${codeStr}`);
-      lines.push(`   Stock: ${stockStr}`);
-      lines.push('');
+      lines.push(`${index + 1}. ${p.name}: ${p.stock || 0} ${p.unit || 'units'}`);
     });
   }
-
-  lines.push('----------------------------------------');
-  lines.push('_StockTrack App_');
 
   return lines.join('\n');
 }
