@@ -56,6 +56,14 @@ html{scroll-padding-top:calc(var(--app-safe-top) + 100px);scroll-padding-bottom:
 .stock-app{box-sizing:border-box;width:100%;padding:calc(28px + var(--app-safe-top)) calc(var(--app-gutter) + var(--app-safe-right)) calc(24px + var(--app-safe-bottom)) calc(var(--app-gutter) + var(--app-safe-left))}
 .stock-app nav{top:calc(var(--app-safe-top) + 8px)}
 .stock-app header>div:nth-child(2){min-width:0;flex:1}
+.header-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.header-backup-btn{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:20px;border:1px solid #c8d8c6;background:#edf5ea;color:#185a40;font-size:12px;font-weight:650;cursor:pointer;flex-shrink:0}
+.header-backup-btn:hover{background:#e2efdc;border-color:#b4cda0}
+.inline-link-btn{display:inline;background:transparent;border:0;color:#185a40;font-weight:700;padding:0 2px;font-size:inherit;text-decoration:underline;cursor:pointer}
+.inline-link-btn:hover{color:#0f3b2a}
+.backup-action-btn{border:1px solid #dbe5d8!important;border-radius:14px!important;padding:12px 14px!important;background:#fbfdfa!important}
+.backup-action-btn:hover{background:#f1f7ed!important;border-color:#b8cfae!important}
+@media(max-width:480px){.header-backup-btn span{display:none}.header-backup-btn{padding:8px}}
 .stock-app .brand-mark,.offline-badge{flex-shrink:0}
 .stock-app .device-note{padding-bottom:max(10px,var(--app-safe-bottom));overflow-wrap:anywhere}
 .stock-app .panel,.stock-app .record,.stock-app fieldset{min-width:0}

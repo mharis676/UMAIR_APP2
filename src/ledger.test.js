@@ -201,3 +201,28 @@ test('available stock sharing excludes zero stock and keeps units separate', asy
   const text = availableStockText([{ name: 'Tea', stock: 10, unit: 'boxes' }, { name: 'Water', stock: 3, unit: 'bottles' }, { name: 'Empty', stock: 0, unit: 'pieces' }]);
   assert.match(text, /AVAILABLE STOCK/); assert.match(text, /10 boxes/); assert.match(text, /3 bottles/); assert.match(text, /2 products in stock/); assert.doesNotMatch(text, /Empty/);
 });
+
+test('serialize and parse ledger backup round-trip and validation', async () => {
+  const { serializeLedgerBackup, parseLedgerBackup, inventoryCSV, recordsCSV } = await import('./ledger.js');
+  const ledger = {
+    products: [{ id: 'p1', name: 'Almond "Special"', unit: 'kg', stock: 15 }],
+    transactions: [{ id: 't1', productName: 'Almond "Special"', type: 'RECEIVED', quantity: 15, unit: 'kg', prevBalance: 0, newBalance: 15, timestamp: '2026-10-18T10:00:00.000Z', notes: 'First batch' }]
+  };
+  const json = serializeLedgerBackup(ledger);
+  assert.match(json, /"version": "2.0"/);
+  assert.match(json, /"Almond \\"Special\\""/);
+  const restored = parseLedgerBackup(json);
+  assert.deepEqual(restored.products, ledger.products);
+  assert.deepEqual(restored.transactions, ledger.transactions);
+
+  const csvInv = inventoryCSV(ledger.products);
+  assert.match(csvInv, /Product ID,Product Name,Unit,Current Stock,Status/);
+  assert.match(csvInv, /"Almond ""Special"""/);
+
+  const csvRec = recordsCSV(ledger.transactions);
+  assert.match(csvRec, /Transaction ID,Date & Time,Product Name,Type,Quantity,Unit/);
+  assert.match(csvRec, /ACTIVE,"First batch"/);
+
+  assert.throws(() => parseLedgerBackup('not-json'), /not valid JSON/);
+  assert.throws(() => parseLedgerBackup('{"products": []}'), /missing products or transactions/);
+});

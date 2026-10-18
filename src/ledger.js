@@ -213,3 +213,60 @@ export function availableStockText(products, now = new Date()) {
   const totals = Object.entries(available.reduce((result, p) => { result[p.unit] = (result[p.unit] || 0) + p.stock; return result; }, {}));
   return ['*AVAILABLE STOCK*', 'StockTrack', `As of: ${now.toLocaleString()}`, '', ...available.map((p, i) => `${i + 1}. *${p.name}*\n   Available: ${p.stock.toLocaleString()} ${p.unit}`), '', `*${available.length} products in stock*`, ...totals.map(([unit, qty]) => `${qty.toLocaleString()} ${unit}`), 'Snapshot of current stock.'].join('\n');
 }
+
+export function serializeLedgerBackup(ledger) {
+  return JSON.stringify({
+    version: '2.0',
+    exportedAt: new Date().toISOString(),
+    ledger: {
+      products: ledger.products,
+      transactions: ledger.transactions,
+    }
+  }, null, 2);
+}
+
+export function parseLedgerBackup(jsonString) {
+  let parsed;
+  try {
+    parsed = typeof jsonString === 'string' ? JSON.parse(jsonString) : jsonString;
+  } catch {
+    throw new Error('Invalid backup file: file is not valid JSON.');
+  }
+  const data = (parsed && parsed.ledger) ? parsed.ledger : parsed;
+  if (!data || !Array.isArray(data.products) || !Array.isArray(data.transactions)) {
+    throw new Error('Invalid backup file format: missing products or transactions.');
+  }
+  return {
+    products: data.products,
+    transactions: data.transactions,
+  };
+}
+
+export function inventoryCSV(products) {
+  const headers = ['Product ID', 'Product Name', 'Unit', 'Current Stock', 'Status'];
+  const rows = products.map(p => [
+    p.id,
+    `"${(p.name || '').replace(/"/g, '""')}"`,
+    `"${(p.unit || '').replace(/"/g, '""')}"`,
+    p.stock,
+    p.stock > 0 ? 'In Stock' : 'Out of Stock'
+  ]);
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}
+
+export function recordsCSV(transactions) {
+  const headers = ['Transaction ID', 'Date & Time', 'Product Name', 'Type', 'Quantity', 'Unit', 'Previous Balance', 'New Balance', 'Status', 'Notes'];
+  const rows = transactions.map(t => [
+    t.id,
+    new Date(t.timestamp).toISOString(),
+    `"${(t.productName || '').replace(/"/g, '""')}"`,
+    t.type,
+    t.quantity,
+    `"${(t.unit || '').replace(/"/g, '""')}"`,
+    t.prevBalance,
+    t.newBalance,
+    t.reversed ? 'CANCELLED' : 'ACTIVE',
+    `"${(t.notes || '').replace(/"/g, '""')}"`
+  ]);
+  return [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+}

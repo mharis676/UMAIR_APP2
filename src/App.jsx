@@ -3,10 +3,11 @@ import { loadLedger, recordBatch, cancelBatch, groupMovements, matchesDate, prod
 import BatchForm from './components/BatchForm';
 import BatchRecord from './components/BatchRecord';
 import SelectPicker from './components/SelectPicker';
-import { Package, ArrowDownLeft, ArrowUpRight, History, Search, SlidersHorizontal, CalendarDays, Boxes, CheckCircle2, AlertTriangle, Layers } from 'lucide-react';
+import { Package, ArrowDownLeft, ArrowUpRight, History, Search, SlidersHorizontal, CalendarDays, Boxes, CheckCircle2, AlertTriangle, Layers, Database } from 'lucide-react';
 import { WhatsAppIcon } from './components/WhatsAppShareButton';
 import DateRangeCalendar from './components/DateRangeCalendar';
 import DailySummary from './components/DailySummary';
+import DataBackupModal from './components/DataBackupModal';
 import './App.css';
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
   const [stockSearch, setStockSearch] = useState('');
   const [movementType, setMovementType] = useState('all');
   const [recordStatus, setRecordStatus] = useState('all');
+  const [backupOpen, setBackupOpen] = useState(false);
   const visibleProducts = ledger.products.filter(p =>
     `${p.name} ${p.code || ''}`.toLowerCase().includes(stockSearch.toLowerCase()) &&
     (availability === 'all' || (availability === 'available' ? p.stock > 0 : p.stock === 0))
@@ -47,6 +49,11 @@ export default function App() {
     setLedger(next);
     setMessage(`${receiving ? 'Receipt' : 'Delivery'} saved with ${entry.items.length} ${entry.items.length === 1 ? 'item' : 'items'}.`);
   }
+  function handleRestore(next) {
+    localStorage.setItem('stocktrack_ledger_v2', JSON.stringify(next));
+    setLedger(next);
+    setMessage(`Restored ${next.products.length} products and ${next.transactions.length} movements from backup.`);
+  }
   function switchTab(next) { setTab(next); setMessage(''); setDetailId(null); setProductId(''); }
   function openDetail(id) { setDetailId(id); setMessage(''); setPeriod('all'); setMovementType('all'); setRecordStatus('all'); window.scrollTo({ top: 0 }); }
   function detailAction(type) { const id = detail.id; switchTab(type); setProductId(id); }
@@ -57,7 +64,16 @@ export default function App() {
     setMessage('Entry cancelled. Stock adjusted and original records kept.');
   }
   return <div className="stock-app">
-    <header><div className="brand-mark"><Package size={25} /></div><div><h1>StockTrack<span className="brand-dot">.</span></h1><p>Your stock, in one place.</p></div><span className="offline-badge"><i />Offline ready</span></header>
+    <header>
+      <div className="brand-mark"><Package size={25} /></div>
+      <div><h1>StockTrack<span className="brand-dot">.</span></h1><p>Your stock, in one place.</p></div>
+      <div className="header-actions">
+        <button type="button" className="header-backup-btn" onClick={() => setBackupOpen(true)} title="Data Backup & Reports">
+          <Database size={15} /><span>Backup & Reports</span>
+        </button>
+        <span className="offline-badge"><i />Offline ready</span>
+      </div>
+    </header>
     <nav aria-label="Main navigation">{['STOCK', 'RECEIVED', 'DELIVERED', 'RECORDS'].map(t => { const Icon = t === 'STOCK' ? Package : t === 'RECEIVED' ? ArrowDownLeft : t === 'DELIVERED' ? ArrowUpRight : History; return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => switchTab(t)}><Icon size={19} />{t === 'STOCK' ? 'Stock' : t === 'RECEIVED' ? 'Receive' : t === 'DELIVERED' ? 'Deliver' : 'Records'}</button>; })}</nav>
     <main>
       {message && <div className="notice" role="status">{message}</div>}
@@ -169,7 +185,15 @@ export default function App() {
           {!filteredTransactions.length && <div className="records-empty"><History size={32} /><h3>{ledger.transactions.length ? 'No matching activity' : 'Your story starts here'}</h3><p className="muted">{ledger.transactions.length ? 'Try a different date, movement type, or search.' : 'Receive or deliver stock to create your first record.'}</p>{!!ledger.transactions.length && <button onClick={() => { setSearch(''); setPeriod('all'); setMovementType('all'); setRecordStatus('all'); }}>Clear filters</button>}</div>}
         </section>}
       </>}
-      <p className="device-note">Saved on this device. Works offline. Clearing app data or uninstalling removes records.</p>
+      <p className="device-note">
+        Saved on this device. Works offline. <button type="button" className="inline-link-btn" onClick={() => setBackupOpen(true)}>Backup & Export data</button>
+      </p>
     </main>
+    <DataBackupModal
+      isOpen={backupOpen}
+      onClose={() => setBackupOpen(false)}
+      ledger={ledger}
+      onRestore={handleRestore}
+    />
   </div>;
 }
