@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { Database, Download, Upload, FileSpreadsheet, FileText, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Download, Upload, FileSpreadsheet, FileText, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { serializeLedgerBackup, parseLedgerBackup, inventoryCSV, recordsCSV } from '../ledger';
 import { exportHistoryPDF, exportInventoryPDF } from '../utils/pdfExport';
 

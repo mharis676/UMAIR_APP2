@@ -60,6 +60,23 @@ for (const profile of profiles) {
     await page.getByRole('button', { name: 'Custom range', exact: true }).click();
     await expect(page.locator('.calendar-grid')).toBeVisible();
     await noOverflow();
+
+    // QA: Verify Backup & Reports modal within safe areas
+    await page.getByRole('button', { name: /Backup & Reports/ }).click();
+    const backupDialog = page.getByRole('dialog', { name: /Backup & Reports/ });
+    await expect(backupDialog).toBeVisible();
+    const backupBounds = await backupDialog.boundingBox();
+    expect(backupBounds.x).toBeGreaterThanOrEqual(profile.left);
+    expect(backupBounds.y).toBeGreaterThanOrEqual(profile.top);
+    expect(backupBounds.x + backupBounds.width).toBeLessThanOrEqual(profile.width - profile.right + 1);
+    expect(backupBounds.y + backupBounds.height).toBeLessThanOrEqual(profile.height - profile.bottom + 1);
+    await expect(page.getByRole('button', { name: /Export Full Backup/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Stock CSV/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Stock PDF/ })).toBeVisible();
+    await page.getByRole('button', { name: 'Close', exact: true }).click();
+    await expect(backupDialog).not.toBeVisible();
+    await noOverflow();
+
     await page.screenshot({ path: testInfo.outputPath('records-mobile.png'), fullPage: true });
   });
 }
