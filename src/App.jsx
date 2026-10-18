@@ -74,7 +74,7 @@ export default function App() {
         <span className="offline-badge"><i />Offline ready</span>
       </div>
     </header>
-    <nav aria-label="Main navigation">{['STOCK', 'RECEIVED', 'DELIVERED', 'RECORDS'].map(t => { const Icon = t === 'STOCK' ? Package : t === 'RECEIVED' ? ArrowDownLeft : t === 'DELIVERED' ? ArrowUpRight : History; return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => switchTab(t)}><Icon size={19} />{t === 'STOCK' ? 'Stock' : t === 'RECEIVED' ? 'Receive' : t === 'DELIVERED' ? 'Deliver' : 'Records'}</button>; })}</nav>
+    <nav aria-label="Main navigation">{['STOCK', 'RECEIVED', 'DELIVERED', 'RECORDS'].map(t => { const Icon = t === 'STOCK' ? Package : t === 'RECEIVED' ? ArrowDownLeft : t === 'DELIVERED' ? ArrowUpRight : History; return <button key={t} aria-current={tab === t ? 'page' : undefined} onClick={() => switchTab(t)}><Icon size={19} /><span>{t === 'STOCK' ? 'Stock' : t === 'RECEIVED' ? 'Receive' : t === 'DELIVERED' ? 'Deliver' : 'Records'}</span></button>; })}</nav>
     <main>
       {message && <div className="notice" role="status">{message}</div>}
       {['RECEIVED', 'DELIVERED'].includes(tab) ? <section className="panel">

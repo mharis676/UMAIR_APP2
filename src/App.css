@@ -67,7 +67,12 @@ html{scroll-padding-top:calc(var(--app-safe-top) + 100px);scroll-padding-bottom:
 .stock-app .brand-mark,.offline-badge{flex-shrink:0}
 .stock-app .device-note{padding-bottom:max(10px,var(--app-safe-bottom));overflow-wrap:anywhere}
 .stock-app .panel,.stock-app .record,.stock-app fieldset{min-width:0}
-.stock-app .stock-row>strong,.stock-app .stock-card-name{min-width:0;overflow-wrap:anywhere}
+.stock-app nav button{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.stock-app nav button span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.stock-app .record .stock-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:12px 0 4px;font-size:16px;flex-wrap:nowrap!important}
+.stock-app .record .stock-row>strong{flex:1;min-width:0;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;line-height:1.35;word-break:break-word}
+.stock-app .receipt-reference{font-size:11px;color:#819078;letter-spacing:.5px;flex-shrink:0;white-space:nowrap}
+.stock-card-name strong{display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;word-break:break-word}
 .stock-app .record-filter-row{flex-wrap:wrap}
 .picker-dialog{max-width:min(440px,calc(100vw - var(--app-safe-left) - var(--app-safe-right) - 24px));max-height:calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 24px);margin:auto;inset:var(--app-safe-top) var(--app-safe-right) var(--app-safe-bottom) var(--app-safe-left)}
 .stock-app input,.stock-app textarea{scroll-margin-top:calc(var(--app-safe-top) + 110px);scroll-margin-bottom:calc(var(--app-safe-bottom) + 24px)}
