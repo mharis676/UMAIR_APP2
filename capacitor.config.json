@@ -4,7 +4,7 @@
   "webDir": "dist",
   "plugins": {
     "SystemBars": {
-      "insetsHandling": "css",
+      "insetsHandling": "native",
       "style": "LIGHT",
       "initialViewportFitValueHint": "cover"
     }

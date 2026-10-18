@@ -57,7 +57,7 @@ html{scroll-padding-top:calc(var(--app-safe-top) + 100px);scroll-padding-bottom:
 .stock-app nav{top:calc(var(--app-safe-top) + 8px)}
 .stock-app header>div:nth-child(2){min-width:0;flex:1}
 .stock-app .brand-mark,.offline-badge{flex-shrink:0}
-.stock-app .device-note{padding-bottom:10px;overflow-wrap:anywhere}
+.stock-app .device-note{padding-bottom:max(10px,var(--app-safe-bottom));overflow-wrap:anywhere}
 .stock-app .panel,.stock-app .record,.stock-app fieldset{min-width:0}
 .stock-app .stock-row>strong,.stock-app .stock-card-name{min-width:0;overflow-wrap:anywhere}
 .stock-app .record-filter-row{flex-wrap:wrap}
@@ -66,7 +66,7 @@ html{scroll-padding-top:calc(var(--app-safe-top) + 100px);scroll-padding-bottom:
 @media(max-width:480px){
   :root{--app-gutter:14px}
   .stock-app{padding-top:calc(20px + var(--app-safe-top))}
-  .picker-dialog{width:calc(100% - var(--app-safe-left) - var(--app-safe-right));max-width:none;max-height:calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 16px);inset:auto var(--app-safe-right) var(--app-safe-bottom) var(--app-safe-left);margin:0;padding:12px 20px 20px}
+  .picker-dialog{width:calc(100% - var(--app-safe-left) - var(--app-safe-right));max-width:none;max-height:calc(100dvh - var(--app-safe-top) - var(--app-safe-bottom) - 16px);inset:auto var(--app-safe-right) var(--app-safe-bottom) var(--app-safe-left);margin:0;padding:12px 20px max(20px,calc(16px + var(--app-safe-bottom)))}
 }
 @media(max-width:359px){.offline-badge{display:none}.stock-app .panel{padding:16px}.stock-app header{gap:9px}.stock-app .record-actions{flex-wrap:wrap}.stock-app .record-actions>.cancel-entry{margin-left:0}}
 
