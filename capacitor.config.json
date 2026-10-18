@@ -2,7 +2,11 @@
   "appId": "com.stockflow.app",
   "appName": "StockTrack",
   "webDir": "dist",
-  "android": {
-    "adjustMarginsForEdgeToEdge": "auto"
+  "plugins": {
+    "SystemBars": {
+      "insetsHandling": "css",
+      "style": "LIGHT",
+      "initialViewportFitValueHint": "cover"
+    }
   }
 }

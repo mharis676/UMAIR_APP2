@@ -2,57 +2,72 @@ name: Build Android APK
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
-    name: Build Android APK
     runs-on: ubuntu-latest
-
+    timeout-minutes: 25
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
-
-      - name: Install Node Dependencies
-        run: npm install
-
-      - name: Build Web Application
-        run: npm run build
-
-      - name: Setup Java JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: 21
-
-      - name: Accept Android SDK Licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Sync Capacitor to Native Android Project
-        run: npx cap sync android
-
-      - name: Make Gradle Executable
-        run: chmod +x android/gradlew
-
-      - name: Build Android Debug APK
-        run: |
-          cd android
-          ./gradlew assembleDebug --stacktrace
-
-      - name: Upload Debug APK Artifact
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Check stock recording rules
+        run: npm test
+      - name: Lint
+        run: npm run lint
+      - name: Install mobile layout test browser
+        run: npx playwright install --with-deps chromium
+      - name: Verify mobile layouts and safe areas
+        run: npm run test:mobile
+      - name: Upload mobile layout report
+        if: always()
         uses: actions/upload-artifact@v4
+        with:
+          name: mobile-layout-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 14
+      - name: Build app
+        run: npm run build
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Sync Android app
+        run: npx cap sync android
+      - name: Build installable APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug lintDebug testDebugUnitTest --stacktrace
+      - name: Upload Android check reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-check-reports
+          path: android/app/build/reports/
+          retention-days: 14
+      - uses: actions/upload-artifact@v4
         with:
           name: StockTrack-debug-apk
           path: android/app/build/outputs/apk/debug/*.apk
